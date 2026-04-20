@@ -2,35 +2,33 @@ import type { Point, BoardSize, JoistConfig, PlacedJoist, JoistResult, Offcut, O
 import {
   rotatePolygon,
   polygonCentroid,
-  boundingBox,
+  polygonScanlineSegments,
   rotatePoint,
 } from './geometry'
 
-class JoistOffcutPool {
+class JoistPool {
   private pool: Map<string, number[]> = new Map()
   private minLength: number
   usedCount = 0
 
-  constructor(minLength: number) {
-    this.minLength = minLength
-  }
+  constructor(minLength: number) { this.minLength = minLength }
 
-  add(sizeId: string, length: number) {
+  add(id: string, length: number) {
     if (length < this.minLength) return
-    const list = this.pool.get(sizeId) || []
+    const list = this.pool.get(id) || []
     list.push(length)
     list.sort((a, b) => a - b)
-    this.pool.set(sizeId, list)
+    this.pool.set(id, list)
   }
 
-  findExactOrLarger(minLength: number): { sizeId: string; length: number } | null {
-    let best: { sizeId: string; length: number } | null = null
+  findBestFit(minLength: number): { id: string; length: number } | null {
+    let best: { id: string; length: number } | null = null
     let bestWaste = Infinity
     for (const [id, lengths] of this.pool) {
       for (const len of lengths) {
         if (len >= minLength && len - minLength < bestWaste) {
           bestWaste = len - minLength
-          best = { sizeId: id, length: len }
+          best = { id, length: len }
           if (bestWaste === 0) return best
         }
       }
@@ -38,18 +36,18 @@ class JoistOffcutPool {
     return best
   }
 
-  findLargestUnder(maxLength: number): { sizeId: string; length: number } | null {
-    let best: { sizeId: string; length: number } | null = null
+  findLargest(): { id: string; length: number } | null {
+    let best: { id: string; length: number } | null = null
     for (const [id, lengths] of this.pool) {
       for (const len of lengths) {
-        if (len <= maxLength && (!best || len > best.length)) best = { sizeId: id, length: len }
+        if (!best || len > best.length) best = { id, length: len }
       }
     }
     return best
   }
 
-  remove(sizeId: string, length: number) {
-    const list = this.pool.get(sizeId)
+  take(id: string, length: number) {
+    const list = this.pool.get(id)
     if (!list) return
     const idx = list.indexOf(length)
     if (idx >= 0) { list.splice(idx, 1); this.usedCount++ }
@@ -64,54 +62,124 @@ class JoistOffcutPool {
   }
 }
 
-function fillJoistSegmentWithPool(
-  segStart: number, segEnd: number, x: number, joistWidth: number,
-  availableSizes: BoardSize[], pool: JoistOffcutPool, mode: OffcutSettings['mode']
-): PlacedJoist[] {
-  const segLen = segEnd - segStart
+interface Rect {
+  xStart: number
+  xEnd: number
+  yStart: number
+  yEnd: number
+}
+
+function minimalDecompose(polygon: Point[]): Rect[] {
+  const uniqueYs = [...new Set(polygon.map(p => p.y))].sort((a, b) => a - b)
+  const merged = new Map<string, Rect>()
+  const rects: Rect[] = []
+
+  for (let i = 0; i < uniqueYs.length - 1; i++) {
+    const yStart = uniqueYs[i]
+    const yEnd = uniqueYs[i + 1]
+    const midY = (yStart + yEnd) / 2
+    const segments = polygonScanlineSegments(polygon, midY)
+
+    for (const [xStart, xEnd] of segments) {
+      if (xEnd - xStart < 1) continue
+      const key = `${Math.round(xStart)}_${Math.round(xEnd)}`
+      const existing = merged.get(key)
+      if (existing && Math.abs(existing.yEnd - yStart) < 1) {
+        existing.yEnd = yEnd
+      } else {
+        const rect = { xStart, xEnd, yStart, yEnd }
+        merged.set(key, rect)
+        rects.push(rect)
+      }
+    }
+  }
+
+  return rects
+}
+
+function optimalJoistPlan(segLen: number, sizes: BoardSize[], gap: number): Array<{ size: BoardSize; len: number; cut: boolean }> {
   if (segLen <= 0) return []
 
-  const placed: PlacedJoist[] = []
-  const sorted = [...availableSizes].sort((a, b) => b.length - a.length)
-  const byId = new Map(availableSizes.map((s) => [s.id, s]))
-  let cursor = segStart
+  const sorted = [...sizes].sort((a, b) => b.length - a.length)
 
-  while (cursor < segEnd - 1) {
-    const remaining = segEnd - cursor
+  let bestPlan: Array<{ size: BoardSize; len: number; cut: boolean }> = []
+  let bestEffWaste = Infinity
 
-    if (mode !== 'no-reuse') {
-      const exact = pool.findExactOrLarger(remaining)
-      if (exact) {
-        const joist = byId.get(exact.sizeId) || sorted[0]
-        pool.remove(exact.sizeId, exact.length)
-        const actualLen = Math.min(exact.length, remaining)
-        if (actualLen < exact.length) pool.add(exact.sizeId, exact.length - actualLen)
-        placed.push(makeJoist(x, cursor, actualLen, joistWidth, joist, actualLen < exact.length, true, exact.length))
-        cursor += actualLen
-        continue
-      }
-      if (mode === 'reuse-aggressive') {
-        const largest = pool.findLargestUnder(remaining)
-        if (largest) {
-          const joist = byId.get(largest.sizeId) || sorted[0]
-          pool.remove(largest.sizeId, largest.length)
-          placed.push(makeJoist(x, cursor, largest.length, joistWidth, joist, false, true, largest.length))
-          cursor += largest.length
+  for (const primary of sorted) {
+    for (const last of sorted) {
+      const maxN = Math.floor((segLen + gap) / (primary.length + gap))
+
+      for (let n = maxN; n >= 0; n--) {
+        const filled = n > 0 ? n * primary.length + Math.max(0, n - 1) * gap : 0
+        const remaining = n === 0 ? segLen : segLen - filled - gap
+
+        if (remaining <= 0) {
+          const adjustedFill = n * primary.length + Math.max(0, n - 1) * gap
+          if (Math.abs(adjustedFill - segLen) < 1 && 0 < bestEffWaste) {
+            bestEffWaste = 0
+            bestPlan = []
+            for (let i = 0; i < n; i++) bestPlan.push({ size: primary, len: primary.length, cut: false })
+          }
           continue
+        }
+
+        if (remaining > 0 && remaining <= last.length) {
+          const offcut = last.length - remaining
+          const reuseCount = offcut >= segLen ? Math.floor((offcut + gap) / (segLen + gap)) : 0
+          const effWaste = reuseCount > 0
+            ? (last.length - remaining - reuseCount * segLen) / (reuseCount + 1)
+            : offcut
+
+          if (effWaste < bestEffWaste) {
+            bestEffWaste = effWaste
+            bestPlan = []
+            for (let i = 0; i < n; i++) bestPlan.push({ size: primary, len: primary.length, cut: false })
+            bestPlan.push({ size: last, len: remaining, cut: remaining < last.length })
+          }
+          if (effWaste <= 0) break
         }
       }
     }
+  }
 
-    let best: BoardSize | null = null
-    for (const s of sorted) { if (s.length <= remaining) { best = s; break } }
-    if (!best) best = sorted[0]
+  if (bestPlan.length === 0) {
+    const best = sorted[0]
+    bestPlan.push({ size: best, len: Math.min(best.length, segLen), cut: true })
+  }
 
-    const actualLen = Math.min(best.length, remaining)
-    const isCut = actualLen < best.length
-    if (isCut) pool.add(best.id, best.length - actualLen)
+  return bestPlan
+}
 
-    placed.push(makeJoist(x, cursor, actualLen, joistWidth, best, isCut, false, best.length))
-    cursor += actualLen
+function fillJoistColumn(
+  x: number, yStart: number, yEnd: number, joistWidth: number,
+  sizes: BoardSize[], gap: number,
+  pool: JoistPool, mode: OffcutSettings['mode']
+): PlacedJoist[] {
+  const segLen = yEnd - yStart
+  if (segLen <= 0) return []
+
+  const byId = new Map(sizes.map(s => [s.id, s]))
+  const plan = optimalJoistPlan(segLen, sizes, gap)
+  const placed: PlacedJoist[] = []
+  let cursor = yStart
+
+  for (const step of plan) {
+    if (mode !== 'no-reuse') {
+      const match = pool.findBestFit(step.len)
+      if (match && match.length >= step.len) {
+        const joist = byId.get(match.id) || step.size
+        pool.take(match.id, match.length)
+        const useLen = step.len
+        if (useLen < match.length) pool.add(match.id, match.length - useLen)
+        placed.push(makeJoist(x, cursor, useLen, joistWidth, joist, useLen < match.length, true, match.length))
+        cursor += useLen + gap
+        continue
+      }
+    }
+
+    if (step.cut) pool.add(step.size.id, step.size.length - step.len)
+    placed.push(makeJoist(x, cursor, step.len, joistWidth, step.size, step.cut, false, step.size.length))
+    cursor += step.len + gap
   }
 
   return placed
@@ -138,26 +206,28 @@ export function calculateJoistLayout(
 
   const centroid = polygonCentroid(polygon)
   const rotated = rotatePolygon(polygon, -directionAngle, centroid)
-  const bb = boundingBox(rotated)
+  const rects = minimalDecompose(rotated)
 
-  const pool = new JoistOffcutPool(offcutSettings.minLength)
+  const pool = new JoistPool(offcutSettings.minLength)
   const allPlaced: PlacedJoist[] = []
 
-  const totalWidth = bb.maxX - bb.minX
-  const joistCount = Math.max(1, Math.floor(totalWidth / config.spacing) + 1)
-  const usedSpan = (joistCount - 1) * config.spacing
-  const startOffset = (totalWidth - usedSpan) / 2
+  for (const rect of rects) {
+    const rectWidth = rect.xEnd - rect.xStart
+    const joistCount = Math.max(1, Math.floor(rectWidth / config.spacing) + 1)
+    const usedSpan = (joistCount - 1) * config.spacing
+    const startOffset = (rectWidth - usedSpan) / 2
 
-  for (let i = 0; i < joistCount; i++) {
-    const x = bb.minX + startOffset + i * config.spacing
-    const segments = getVerticalSegments(rotated, x)
-    for (const [segStart, segEnd] of segments) {
-      allPlaced.push(...fillJoistSegmentWithPool(segStart, segEnd, x, config.width, config.sizes, pool, offcutSettings.mode))
+    for (let i = 0; i < joistCount; i++) {
+      const x = rect.xStart + startOffset + i * config.spacing
+      allPlaced.push(...fillJoistColumn(
+        x, rect.yStart, rect.yEnd, config.width,
+        config.sizes, 0, pool, offcutSettings.mode
+      ))
     }
   }
 
-  const placedJoists = allPlaced.map((j) => ({
-    ...j, corners: j.corners.map((c) => rotatePoint(c, directionAngle, centroid)),
+  const placedJoists = allPlaced.map(j => ({
+    ...j, corners: j.corners.map(c => rotatePoint(c, directionAngle, centroid)),
   }))
 
   const joistCounts: Record<string, { full: number; cut: number }> = {}
@@ -168,22 +238,4 @@ export function calculateJoistLayout(
   }
 
   return { placedJoists, joistCounts, offcutsUsed: pool.usedCount, offcutsRemaining: pool.getRemaining() }
-}
-
-function getVerticalSegments(polygon: Point[], x: number): Array<[number, number]> {
-  const ys: number[] = []
-  const n = polygon.length
-  for (let i = 0; i < n; i++) {
-    const j = (i + 1) % n
-    const p1 = polygon[i], p2 = polygon[j]
-    if ((p1.x <= x && p2.x <= x) || (p1.x > x && p2.x > x)) continue
-    if (p1.x === p2.x) continue
-    const t = (x - p1.x) / (p2.x - p1.x)
-    if (t < 0 || t >= 1) continue
-    ys.push(p1.y + t * (p2.y - p1.y))
-  }
-  ys.sort((a, b) => a - b)
-  const segments: Array<[number, number]> = []
-  for (let i = 0; i + 1 < ys.length; i += 2) segments.push([ys[i], ys[i + 1]])
-  return segments
 }

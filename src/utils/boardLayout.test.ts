@@ -173,7 +173,6 @@ describe('calculateLayout', () => {
       const result = calculateLayout(L_SHAPE, BOARDS, GAPS, 0, null, NO_REUSE)
 
       for (const board of result.placedBoards) {
-        const midY = (board.corners[0].y + board.corners[2].y) / 2
         const boardMinX = Math.min(...board.corners.map((c) => c.x))
         const boardMaxX = Math.max(...board.corners.map((c) => c.x))
 
@@ -258,12 +257,6 @@ describe('calculateLayout', () => {
     it('L-shape bottom edge should be covered (no gap at y=-5640)', () => {
       const result = calculateLayout(L_SHAPE, BOARDS, GAPS, 0, null, NO_REUSE)
       const bottomEdge = -5640
-
-      const lowestBoards = result.placedBoards
-        .map(b => ({ maxY: Math.max(...b.corners.map((c: Point) => c.y)), minX: Math.min(...b.corners.map((c: Point) => c.x)) }))
-        .sort((a, b) => b.maxY - a.maxY)
-        .slice(0, 5)
-
 
       const nearEdge = result.placedBoards.filter(b => {
         const minY = Math.min(...b.corners.map((c: Point) => c.y))

@@ -60,7 +60,7 @@ export function useTerraceCalculator() {
 
   const history = useRef<AppState[]>([])
   const future = useRef<AppState[]>([])
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>()
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
