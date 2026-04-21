@@ -4,6 +4,7 @@ import { calculateLayout } from '../utils/boardLayout'
 import { calculateJoistLayout } from '../utils/joistLayout'
 import { downloadProject, loadProjectFromFile } from '../utils/projectFile'
 import type { AppState } from '../utils/projectFile'
+import { encodeStateToHash, decodeHashToState } from '../utils/shareUrl'
 
 const DEFAULT_BOARDS: BoardSize[] = [
   { id: '140x2400', width: 140, length: 2400, label: '140 × 2400 mm' },
@@ -144,18 +145,36 @@ export function useTerraceCalculator() {
     } catch { /* user cancelled */ }
   }, [pushHistory, applyState])
 
+  const [shared, setShared] = useState(false)
+  const handleShare = useCallback(() => {
+    const hash = encodeStateToHash(snapshot())
+    const url = `${window.location.origin}${window.location.pathname}#${hash}`
+    navigator.clipboard.writeText(url)
+    window.history.replaceState(null, '', `#${hash}`)
+    setShared(true)
+    setTimeout(() => setShared(false), 2000)
+  }, [snapshot])
+
+  useEffect(() => {
+    const hash = window.location.hash.slice(1)
+    if (hash) {
+      const state = decodeHashToState(hash)
+      if (state) applyState(state)
+    }
+  }, [])// eslint-disable-line react-hooks/exhaustive-deps
+
   const canUndo = history.current.length > 0
   const canRedo = future.current.length > 0
 
   return {
     polygon, boards, gaps, angle, startPoint,
     upperJoists, lowerJoists, offcutSettings,
-    result, canUndo, canRedo,
+    result, canUndo, canRedo, shared,
     undo, redo,
     handleBoardsChange, handleGapsChange, handleAngleChange,
     handlePolygonComplete, handlePolygonUpdate, handleStartPointSet, handleClear,
     handleUpperJoistsChange, handleLowerJoistsChange,
     handleOffcutSettingsChange,
-    handleSave, handleLoad,
+    handleSave, handleLoad, handleShare,
   }
 }

@@ -16,13 +16,13 @@ export default function App() {
   const {
     polygon, boards, gaps, angle, startPoint,
     upperJoists, lowerJoists, offcutSettings,
-    result, canUndo, canRedo,
+    result, canUndo, canRedo, shared,
     undo, redo,
     handleBoardsChange, handleGapsChange, handleAngleChange,
     handlePolygonComplete, handlePolygonUpdate, handleStartPointSet, handleClear,
     handleUpperJoistsChange, handleLowerJoistsChange,
     handleOffcutSettingsChange,
-    handleSave, handleLoad,
+    handleSave, handleLoad, handleShare,
   } = useTerraceCalculator()
 
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('boards')
@@ -75,6 +75,17 @@ export default function App() {
               title="Eksportuj SVG"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" /></svg>
+            </button>
+            <button
+              onClick={handleShare}
+              className={`p-1.5 rounded-md transition-colors ${shared ? 'text-success bg-success/10' : 'text-text-secondary hover:bg-surface-hover'}`}
+              title={shared ? 'Skopiowano!' : 'Udostępnij link'}
+            >
+              {shared ? (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>
+              )}
             </button>
             <div className="w-px h-4 bg-border-subtle mx-1" />
             <button onClick={undo} disabled={!canUndo} className="p-1.5 rounded-md text-text-secondary hover:bg-surface-hover disabled:text-border-subtle transition-colors" title="Cofnij">
