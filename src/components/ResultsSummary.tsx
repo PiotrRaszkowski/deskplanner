@@ -27,6 +27,11 @@ export default function ResultsSummary({ result, boards }: ResultsSummaryProps) 
     totalRip += counts.ripCut
   }
 
+  let orderArea = 0
+  for (const b of result.placedBoards) {
+    if (!b.fromOffcut) orderArea += b.originalLength * b.boardSize.width
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <h2 className="text-sm font-semibold text-text-primary uppercase tracking-wider flex items-center gap-1.5">{t('results.title')} <HelpTooltip textKey="results.help" /></h2>
@@ -46,7 +51,7 @@ export default function ResultsSummary({ result, boards }: ResultsSummaryProps) 
         <div className="flex items-center justify-between">
           <div>
             <div className="text-[10px] text-text-muted uppercase">Do kupienia (nowe deski)</div>
-            <div className="text-2xl font-bold text-success font-mono mt-0.5">{result.totalBoardsToOrder} szt.</div>
+            <div className="text-2xl font-bold text-success font-mono mt-0.5">{result.totalBoardsToOrder} szt. <span className="text-base font-semibold text-text-muted">({(orderArea / 1_000_000).toFixed(2)} m²)</span></div>
           </div>
           <div className="text-right text-xs text-text-muted leading-relaxed">
             <div>{totalFull} pełnych</div>
