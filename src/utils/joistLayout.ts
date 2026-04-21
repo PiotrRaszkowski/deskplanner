@@ -175,6 +175,18 @@ function fillJoistColumn(
         cursor += useLen + gap
         continue
       }
+
+      if (mode === 'reuse-aggressive') {
+        const largest = pool.findLargest()
+        if (largest && largest.length >= 100) {
+          const joist = byId.get(largest.id) || step.size
+          pool.take(largest.id, largest.length)
+          const useLen = Math.min(largest.length, step.len)
+          placed.push(makeJoist(x, cursor, useLen, joistWidth, joist, false, true, largest.length))
+          cursor += useLen + gap
+          continue
+        }
+      }
     }
 
     if (step.cut) pool.add(step.size.id, step.size.length - step.len)

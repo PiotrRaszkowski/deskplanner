@@ -177,6 +177,8 @@ export default function App() {
                   <JoistConfig label="Legary górne" description="Prostopadłe do desek, bezpośrednio pod nimi" config={upperJoists} onChange={handleUpperJoistsChange} />
                   <div className="border-t border-border-subtle" />
                   <JoistConfig label="Legary dolne" description="Prostopadłe do górnych, najniższa warstwa" config={lowerJoists} onChange={handleLowerJoistsChange} />
+                  <div className="border-t border-border-subtle" />
+                  <OffcutConfig settings={offcutSettings} onChange={handleOffcutSettingsChange} />
                 </>
               )}
             </div>
