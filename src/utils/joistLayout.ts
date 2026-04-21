@@ -153,10 +153,14 @@ function optimalJoistPlan(segLen: number, sizes: BoardSize[], gap: number): Arra
 function fillJoistRow(
   xStart: number, xEnd: number, y: number, joistWidth: number,
   sizes: BoardSize[], gap: number,
-  pool: JoistPool, mode: OffcutSettings['mode']
+  pool: JoistPool, mode: OffcutSettings['mode'], minLength: number
 ): PlacedJoist[] {
   const segLen = xEnd - xStart
   if (segLen <= 0) return []
+
+  if (mode === 'reuse-aggressive') {
+    return fillJoistRowAggressive(xStart, xEnd, y, joistWidth, sizes, pool, minLength)
+  }
 
   const byId = new Map(sizes.map(s => [s.id, s]))
   const plan = optimalJoistPlan(segLen, sizes, gap)
@@ -164,21 +168,70 @@ function fillJoistRow(
   let cursor = xStart
 
   for (const step of plan) {
-    if (mode !== 'no-reuse') {
+    if (mode === 'reuse-exact') {
       const match = pool.findBestFit(step.len)
       if (match && match.length >= step.len) {
         const joist = byId.get(match.id) || step.size
         pool.take(match.id, match.length)
         if (step.len < match.length) pool.add(match.id, match.length - step.len)
         placed.push(makeJoistH(cursor, y, step.len, joistWidth, joist, step.len < match.length, true, match.length))
-        cursor += step.len + gap
+        cursor += step.len
         continue
       }
     }
 
     if (step.cut) pool.add(step.size.id, step.size.length - step.len)
     placed.push(makeJoistH(cursor, y, step.len, joistWidth, step.size, step.cut, false, step.size.length))
-    cursor += step.len + gap
+    cursor += step.len
+  }
+
+  return placed
+}
+
+function fillJoistRowAggressive(
+  xStart: number, xEnd: number, y: number, joistWidth: number,
+  sizes: BoardSize[], pool: JoistPool, minLength: number
+): PlacedJoist[] {
+  const sorted = [...sizes].sort((a, b) => b.length - a.length)
+  const placed: PlacedJoist[] = []
+  let cursor = xStart
+
+  while (cursor < xEnd - 1) {
+    const remaining = xEnd - cursor
+
+    const exactPool = pool.findBestFit(remaining)
+    if (exactPool) {
+      const joist = sizes.find(s => s.id === exactPool.id) || sorted[0]
+      pool.take(exactPool.id, exactPool.length)
+      const useLen = Math.min(exactPool.length, remaining)
+      if (useLen < exactPool.length) pool.add(exactPool.id, exactPool.length - useLen)
+      placed.push(makeJoistH(cursor, y, useLen, joistWidth, joist, useLen < exactPool.length, true, exactPool.length))
+      cursor += useLen
+      continue
+    }
+
+    const largest = pool.findLargest()
+    if (largest && largest.length >= minLength) {
+      const joist = sizes.find(s => s.id === largest.id) || sorted[0]
+      pool.take(largest.id, largest.length)
+      const useLen = Math.min(largest.length, remaining)
+      placed.push(makeJoistH(cursor, y, useLen, joistWidth, joist, false, true, largest.length))
+      cursor += useLen
+      continue
+    }
+
+    const fresh = sorted.find(b => b.length <= remaining)
+    if (fresh) {
+      placed.push(makeJoistH(cursor, y, fresh.length, joistWidth, fresh, false, false, fresh.length))
+      cursor += fresh.length
+      continue
+    }
+
+    const useLen = Math.min(sorted[0].length, remaining)
+    const board = sorted[0]
+    if (useLen < board.length) pool.add(board.id, board.length - useLen)
+    placed.push(makeJoistH(cursor, y, useLen, joistWidth, board, true, false, board.length))
+    cursor += useLen
   }
 
   return placed
@@ -220,7 +273,7 @@ export function calculateJoistLayout(
       const y = rect.yStart + startOffset + i * config.spacing
       allPlaced.push(...fillJoistRow(
         rect.xStart, rect.xEnd, y, config.width,
-        config.sizes, 0, pool, offcutSettings.mode
+        config.sizes, 0, pool, offcutSettings.mode, offcutSettings.minLength
       ))
     }
   }
