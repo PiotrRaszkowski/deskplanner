@@ -271,13 +271,25 @@ export function calculateJoistLayout(
 
     for (let i = 0; i < joistCount; i++) {
       const y = rect.yStart + startOffset + i * config.spacing
-      const segments = polygonScanlineSegments(rotated, y)
-      for (const [segStart, segEnd] of segments) {
-        const clippedStart = Math.max(segStart, rect.xStart)
-        const clippedEnd = Math.min(segEnd, rect.xEnd)
-        if (clippedEnd - clippedStart < 1) continue
+
+      const topSegs = polygonScanlineSegments(rotated, y - config.width / 2 + 0.5)
+      const midSegs = polygonScanlineSegments(rotated, y)
+      const botSegs = polygonScanlineSegments(rotated, y + config.width / 2 - 0.5)
+
+      for (const [midStart, midEnd] of midSegs) {
+        let xStart = Math.max(midStart, rect.xStart)
+        let xEnd = Math.min(midEnd, rect.xEnd)
+
+        for (const [ts, te] of topSegs) {
+          if (ts < xEnd && te > xStart) { xStart = Math.max(xStart, ts); xEnd = Math.min(xEnd, te) }
+        }
+        for (const [bs, be] of botSegs) {
+          if (bs < xEnd && be > xStart) { xStart = Math.max(xStart, bs); xEnd = Math.min(xEnd, be) }
+        }
+
+        if (xEnd - xStart < 1) continue
         allPlaced.push(...fillJoistRow(
-          clippedStart, clippedEnd, y, config.width,
+          xStart, xEnd, y, config.width,
           config.sizes, 0, pool, offcutSettings.mode, offcutSettings.minLength
         ))
       }
