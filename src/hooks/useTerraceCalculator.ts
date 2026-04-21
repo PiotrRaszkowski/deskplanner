@@ -15,6 +15,7 @@ const DEFAULT_BOARDS: BoardSize[] = [
 const DEFAULT_GAPS: GapConfig = { along: 5, front: 5 }
 
 const DEFAULT_OFFCUT: OffcutSettings = { mode: 'reuse-exact', minLength: 500 }
+const DEFAULT_JOIST_OFFCUT: OffcutSettings = { mode: 'reuse-aggressive', minLength: 100 }
 
 const DEFAULT_UPPER_JOISTS: JoistConfig = {
   enabled: false,
@@ -57,6 +58,7 @@ export function useTerraceCalculator() {
   const [upperJoists, setUpperJoists] = useState<JoistConfig>(DEFAULT_UPPER_JOISTS)
   const [lowerJoists, setLowerJoists] = useState<JoistConfig>(DEFAULT_LOWER_JOISTS)
   const [offcutSettings, setOffcutSettings] = useState<OffcutSettings>(DEFAULT_OFFCUT)
+  const [joistOffcutSettings, setJoistOffcutSettings] = useState<OffcutSettings>(DEFAULT_JOIST_OFFCUT)
   const [result, setResult] = useState<FullResult>(EMPTY_RESULT)
 
   const history = useRef<AppState[]>([])
@@ -71,12 +73,12 @@ export function useTerraceCalculator() {
         return
       }
       const boardResult = calculateLayout(polygon, boards, gaps, angle, startPoint, offcutSettings)
-      const upperResult = calculateJoistLayout(polygon, upperJoists, angle, offcutSettings)
-      const lowerResult = calculateJoistLayout(polygon, lowerJoists, angle + 90, offcutSettings)
+      const upperResult = calculateJoistLayout(polygon, upperJoists, angle, joistOffcutSettings)
+      const lowerResult = calculateJoistLayout(polygon, lowerJoists, angle + 90, joistOffcutSettings)
       setResult({ boards: boardResult, upperJoists: upperResult, lowerJoists: lowerResult })
     }, 150)
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
-  }, [polygon, boards, gaps, angle, startPoint, upperJoists, lowerJoists, offcutSettings])
+  }, [polygon, boards, gaps, angle, startPoint, upperJoists, lowerJoists, offcutSettings, joistOffcutSettings])
 
   const snapshot = useCallback((): AppState => ({
     polygon: [...polygon], boards: [...boards], gaps: { ...gaps }, angle,
@@ -84,7 +86,8 @@ export function useTerraceCalculator() {
     upperJoists: { ...upperJoists, sizes: [...upperJoists.sizes] },
     lowerJoists: { ...lowerJoists, sizes: [...lowerJoists.sizes] },
     offcutSettings: { ...offcutSettings },
-  }), [polygon, boards, gaps, angle, startPoint, upperJoists, lowerJoists, offcutSettings])
+    joistOffcutSettings: { ...joistOffcutSettings },
+  }), [polygon, boards, gaps, angle, startPoint, upperJoists, lowerJoists, offcutSettings, joistOffcutSettings])
 
   const pushHistory = useCallback(() => {
     history.current.push(snapshot())
@@ -101,6 +104,7 @@ export function useTerraceCalculator() {
     setUpperJoists(state.upperJoists)
     setLowerJoists(state.lowerJoists)
     if (state.offcutSettings) setOffcutSettings(state.offcutSettings)
+    if (state.joistOffcutSettings) setJoistOffcutSettings(state.joistOffcutSettings)
   }, [])
 
   const undo = useCallback(() => {
@@ -128,6 +132,7 @@ export function useTerraceCalculator() {
   const handleUpperJoistsChange = useCallback(withHistory((c: JoistConfig) => setUpperJoists(c)), [withHistory])
   const handleLowerJoistsChange = useCallback(withHistory((c: JoistConfig) => setLowerJoists(c)), [withHistory])
   const handleOffcutSettingsChange = useCallback(withHistory((s: OffcutSettings) => setOffcutSettings(s)), [withHistory])
+  const handleJoistOffcutSettingsChange = useCallback(withHistory((s: OffcutSettings) => setJoistOffcutSettings(s)), [withHistory])
 
   const handleClear = useCallback(() => {
     pushHistory()
@@ -168,13 +173,13 @@ export function useTerraceCalculator() {
 
   return {
     polygon, boards, gaps, angle, startPoint,
-    upperJoists, lowerJoists, offcutSettings,
+    upperJoists, lowerJoists, offcutSettings, joistOffcutSettings,
     result, canUndo, canRedo, shared,
     undo, redo,
     handleBoardsChange, handleGapsChange, handleAngleChange,
     handlePolygonComplete, handlePolygonUpdate, handleStartPointSet, handleClear,
     handleUpperJoistsChange, handleLowerJoistsChange,
-    handleOffcutSettingsChange,
+    handleOffcutSettingsChange, handleJoistOffcutSettingsChange,
     handleSave, handleLoad, handleShare,
   }
 }

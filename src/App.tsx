@@ -18,13 +18,13 @@ export default function App() {
   const [forceOnboarding, setForceOnboarding] = useState(false)
   const {
     polygon, boards, gaps, angle, startPoint,
-    upperJoists, lowerJoists, offcutSettings,
+    upperJoists, lowerJoists, offcutSettings, joistOffcutSettings,
     result, canUndo, canRedo, shared,
     undo, redo,
     handleBoardsChange, handleGapsChange, handleAngleChange,
     handlePolygonComplete, handlePolygonUpdate, handleStartPointSet, handleClear,
     handleUpperJoistsChange, handleLowerJoistsChange,
-    handleOffcutSettingsChange,
+    handleOffcutSettingsChange, handleJoistOffcutSettingsChange,
     handleSave, handleLoad, handleShare,
   } = useTerraceCalculator()
 
@@ -178,7 +178,7 @@ export default function App() {
                   <div className="border-t border-border-subtle" />
                   <JoistConfig label="Legary dolne" description="Prostopadłe do górnych, najniższa warstwa" config={lowerJoists} onChange={handleLowerJoistsChange} />
                   <div className="border-t border-border-subtle" />
-                  <OffcutConfig settings={offcutSettings} onChange={handleOffcutSettingsChange} />
+                  <OffcutConfig settings={joistOffcutSettings} onChange={handleJoistOffcutSettingsChange} />
                 </>
               )}
             </div>

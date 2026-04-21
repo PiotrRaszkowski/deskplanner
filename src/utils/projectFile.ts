@@ -9,6 +9,7 @@ export interface AppState {
   upperJoists: JoistConfig
   lowerJoists: JoistConfig
   offcutSettings?: OffcutSettings
+  joistOffcutSettings?: OffcutSettings
 }
 
 export function exportProject(state: AppState): string {
@@ -26,6 +27,7 @@ export function importProject(json: string): AppState {
     upperJoists: data.upperJoists || { enabled: false, sizes: [], spacing: 350, width: 40, height: 60 },
     lowerJoists: data.lowerJoists || { enabled: false, sizes: [], spacing: 700, width: 40, height: 60 },
     offcutSettings: data.offcutSettings || undefined,
+    joistOffcutSettings: data.joistOffcutSettings || undefined,
   }
 }
 
