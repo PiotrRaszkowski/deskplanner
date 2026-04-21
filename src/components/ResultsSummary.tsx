@@ -80,15 +80,16 @@ export default function ResultsSummary({ result, boards }: ResultsSummaryProps) 
             <th className="text-right py-2 text-text-muted font-medium text-xs">Cięte</th>
             <th className="text-right py-2 text-text-muted font-medium text-xs">Wzdłuż</th>
             <th className="text-right py-2 text-text-muted font-medium text-xs">Zamów.</th>
+            <th className="text-right py-2 text-text-muted font-medium text-xs">m²</th>
           </tr>
         </thead>
         <tbody>
           {Object.entries(result.boardCounts).map(([id, counts]) => {
             const board = boardMap.get(id)
             if (!board || (counts.full === 0 && counts.cut === 0 && counts.ripCut === 0)) return null
-            const orderCount = result.placedBoards
-              .filter((b) => b.boardSize.id === id && !b.fromOffcut)
-              .length
+            const orderBoards = result.placedBoards.filter((b) => b.boardSize.id === id && !b.fromOffcut)
+            const orderCount = orderBoards.length
+            const orderM2 = orderBoards.reduce((s, b) => s + b.originalLength * b.boardSize.width, 0) / 1_000_000
             return (
               <tr key={id} className="border-b border-border-subtle/50">
                 <td className="py-2 text-text-secondary font-mono text-xs">{board.label}</td>
@@ -96,6 +97,7 @@ export default function ResultsSummary({ result, boards }: ResultsSummaryProps) 
                 <td className="py-2 text-right text-warning">{counts.cut}</td>
                 <td className="py-2 text-right text-danger">{counts.ripCut}</td>
                 <td className="py-2 text-right font-semibold text-success">{orderCount}</td>
+                <td className="py-2 text-right text-text-secondary font-mono text-xs">{orderM2.toFixed(2)}</td>
               </tr>
             )
           })}
@@ -107,6 +109,7 @@ export default function ResultsSummary({ result, boards }: ResultsSummaryProps) 
             <td className="py-2 text-right font-semibold text-warning">{totalCut}</td>
             <td className="py-2 text-right font-semibold text-danger">{totalRip}</td>
             <td className="py-2 text-right font-bold text-success">{result.totalBoardsToOrder}</td>
+            <td className="py-2 text-right font-semibold text-text-secondary font-mono text-xs">{(orderArea / 1_000_000).toFixed(2)}</td>
           </tr>
         </tfoot>
       </table>

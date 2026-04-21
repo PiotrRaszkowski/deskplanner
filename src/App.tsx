@@ -215,8 +215,10 @@ function JoistTable({ title, subtitle, result, config, color }: {
   for (const c of Object.values(result.joistCounts)) { totalFull += c.full; totalCut += c.cut }
   const sizeMap = new Map(config.sizes.map((s) => [s.id, s]))
 
+  let actualMeters = 0
   let orderMeters = 0
   for (const j of result.placedJoists) {
+    actualMeters += j.actualLength
     if (!j.fromOffcut) orderMeters += j.originalLength
   }
 
@@ -229,18 +231,19 @@ function JoistTable({ title, subtitle, result, config, color }: {
           <p className="text-[10px] text-text-muted">{subtitle} &middot; {config.width}×{config.height} mm</p>
         </div>
       </div>
-      <div className="rounded-lg bg-success/5 border border-success/15 p-2.5 mb-1">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="text-[10px] text-text-muted uppercase">Do kupienia</div>
-            <div className="text-xl font-bold text-success font-mono">{result.totalToOrder} szt. <span className="text-base font-semibold text-text-muted">({(orderMeters / 1000).toFixed(1)} mb)</span></div>
-          </div>
-          <div className="text-right text-xs text-text-muted">
-            <div>{totalFull} pełnych</div>
-            <div>{totalCut} do cięcia</div>
-            {result.offcutsUsed > 0 && <div className="text-success">+{result.offcutsUsed} z odcinków</div>}
-          </div>
+      <div className="grid grid-cols-2 gap-2 mb-1">
+        <div className="rounded-lg bg-accent/5 border border-accent/15 p-2 text-center">
+          <div className="text-lg font-bold text-accent font-mono">{(actualMeters / 1000).toFixed(1)} mb</div>
+          <div className="text-[9px] text-text-muted uppercase">Potrzeba</div>
         </div>
+        <div className="rounded-lg bg-success/5 border border-success/15 p-2 text-center">
+          <div className="text-lg font-bold text-success font-mono">{(orderMeters / 1000).toFixed(1)} mb</div>
+          <div className="text-[9px] text-text-muted uppercase">Do kupienia</div>
+        </div>
+      </div>
+      <div className="flex items-center justify-between text-xs text-text-muted px-1">
+        <span>{result.totalToOrder} szt. ({totalFull} pełnych + {totalCut} ciętych)</span>
+        {result.offcutsUsed > 0 && <span className="text-success">+{result.offcutsUsed} reuse</span>}
       </div>
       {Object.entries(result.joistCounts).map(([id, counts]) => {
         const size = sizeMap.get(id)
