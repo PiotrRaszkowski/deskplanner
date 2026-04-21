@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { t } from '../utils/i18n'
 
 interface HelpTooltipProps {
@@ -9,28 +9,33 @@ const TOOLTIP_W = 220
 
 export default function HelpTooltip({ textKey }: HelpTooltipProps) {
   const [open, setOpen] = useState(false)
-  const [style, setStyle] = useState<React.CSSProperties>({})
-  const ref = useRef<HTMLButtonElement>(null)
+  const [style, setStyle] = useState<React.CSSProperties>({ position: 'fixed', visibility: 'hidden' })
+  const btnRef = useRef<HTMLButtonElement>(null)
 
-  useEffect(() => {
-    if (!open || !ref.current) return
-
-    const rect = ref.current.getBoundingClientRect()
+  const calcPosition = useCallback(() => {
+    if (!btnRef.current) return { position: 'fixed' as const, visibility: 'hidden' as const }
+    const rect = btnRef.current.getBoundingClientRect()
     const top = rect.bottom + 6
     let left = rect.left
-
-    if (left + TOOLTIP_W > window.innerWidth - 8) {
-      left = window.innerWidth - TOOLTIP_W - 8
-    }
+    if (left + TOOLTIP_W > window.innerWidth - 8) left = window.innerWidth - TOOLTIP_W - 8
     if (left < 8) left = 8
+    return { position: 'fixed' as const, top, left, width: TOOLTIP_W }
+  }, [])
 
-    setStyle({ position: 'fixed', top, left, width: TOOLTIP_W })
+  const handleClick = useCallback(() => {
+    if (!open) {
+      setStyle(calcPosition())
+    }
+    setOpen(o => !o)
+  }, [open, calcPosition])
 
+  useEffect(() => {
+    if (!open) return
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node) &&
-          !(e.target as HTMLElement).closest?.('.help-tooltip-body')) {
-        setOpen(false)
-      }
+      const target = e.target as HTMLElement
+      if (btnRef.current?.contains(target)) return
+      if (target.closest?.('.help-tooltip-body')) return
+      setOpen(false)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
@@ -39,8 +44,8 @@ export default function HelpTooltip({ textKey }: HelpTooltipProps) {
   return (
     <>
       <button
-        ref={ref}
-        onClick={() => setOpen(!open)}
+        ref={btnRef}
+        onClick={handleClick}
         className="w-4 h-4 rounded-full bg-border-subtle hover:bg-accent/20 text-text-muted hover:text-accent text-[9px] font-bold leading-none flex items-center justify-center transition-colors shrink-0"
       >
         ?
