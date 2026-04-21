@@ -201,7 +201,7 @@ function makeJoist(
 export function calculateJoistLayout(
   polygon: Point[], config: JoistConfig, directionAngle: number, offcutSettings: OffcutSettings
 ): JoistResult {
-  const empty: JoistResult = { placedJoists: [], joistCounts: {}, offcutsUsed: 0, offcutsRemaining: [] }
+  const empty: JoistResult = { placedJoists: [], joistCounts: {}, totalToOrder: 0, offcutsUsed: 0, offcutsRemaining: [] }
   if (!config.enabled || polygon.length < 3 || config.sizes.length === 0) return empty
 
   const centroid = polygonCentroid(polygon)
@@ -237,5 +237,8 @@ export function calculateJoistLayout(
     if (entry) { if (j.cut) entry.cut++; else entry.full++ }
   }
 
-  return { placedJoists, joistCounts, offcutsUsed: pool.usedCount, offcutsRemaining: pool.getRemaining() }
+  let totalToOrder = 0
+  for (const j of allPlaced) { if (!j.fromOffcut) totalToOrder++ }
+
+  return { placedJoists, joistCounts, totalToOrder, offcutsUsed: pool.usedCount, offcutsRemaining: pool.getRemaining() }
 }

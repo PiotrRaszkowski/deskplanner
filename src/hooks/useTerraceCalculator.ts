@@ -38,7 +38,7 @@ const EMPTY_BOARD_RESULT: LayoutResult = {
 }
 
 const EMPTY_JOIST_RESULT: JoistResult = {
-  placedJoists: [], joistCounts: {}, offcutsUsed: 0, offcutsRemaining: [],
+  placedJoists: [], joistCounts: {}, totalToOrder: 0, offcutsUsed: 0, offcutsRemaining: [],
 }
 
 const EMPTY_RESULT: FullResult = {

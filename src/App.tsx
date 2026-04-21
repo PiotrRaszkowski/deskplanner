@@ -52,7 +52,7 @@ export default function App() {
               </svg>
             </div>
             <div>
-              <h1 className="text-sm font-semibold text-text-primary tracking-tight">DeckPlanner</h1>
+              <h1 className="text-sm font-semibold text-text-primary tracking-tight">Deckable</h1>
             </div>
           </div>
           <div className="flex items-center gap-0.5">
@@ -199,21 +199,19 @@ function JoistTable({ title, subtitle, result, config, color }: {
           <p className="text-[10px] text-text-muted">{subtitle} &middot; {config.width}×{config.height} mm</p>
         </div>
       </div>
-      <div className="grid grid-cols-3 gap-2">
-        <div className="rounded-lg bg-success/5 border border-success/15 p-2 text-center">
-          <div className="text-lg font-bold text-success font-mono">{totalFull}</div>
-          <div className="text-[9px] text-text-muted uppercase">Pełne</div>
-        </div>
-        <div className="rounded-lg bg-warning/5 border border-warning/15 p-2 text-center">
-          <div className="text-lg font-bold text-warning font-mono">{totalCut}</div>
-          <div className="text-[9px] text-text-muted uppercase">Cięte</div>
-        </div>
-        <div className="rounded-lg bg-accent/5 border border-accent/15 p-2 text-center">
-          <div className="text-lg font-bold text-accent font-mono">{totalFull + totalCut}</div>
-          <div className="text-[9px] text-text-muted uppercase">Razem</div>
+      <div className="rounded-lg bg-success/5 border border-success/15 p-2.5 mb-1">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-[10px] text-text-muted uppercase">Do kupienia</div>
+            <div className="text-xl font-bold text-success font-mono">{result.totalToOrder} szt.</div>
+          </div>
+          <div className="text-right text-xs text-text-muted">
+            <div>{totalFull} pełnych</div>
+            <div>{totalCut} do cięcia</div>
+            {result.offcutsUsed > 0 && <div className="text-success">+{result.offcutsUsed} z odcinków</div>}
+          </div>
         </div>
       </div>
-      {result.offcutsUsed > 0 && <p className="text-xs text-text-muted">Reuse odcinków: <strong className="text-success">{result.offcutsUsed}</strong></p>}
       {Object.entries(result.joistCounts).map(([id, counts]) => {
         const size = sizeMap.get(id)
         if (!size || (counts.full === 0 && counts.cut === 0)) return null

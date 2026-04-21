@@ -73,6 +73,7 @@ export interface JoistCount {
 export interface JoistResult {
   placedJoists: PlacedJoist[]
   joistCounts: Record<string, JoistCount>
+  totalToOrder: number
   offcutsUsed: number
   offcutsRemaining: Offcut[]
 }
