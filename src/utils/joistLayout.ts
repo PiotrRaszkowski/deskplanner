@@ -272,8 +272,8 @@ export function calculateJoistLayout(
     for (let i = 0; i < joistCount; i++) {
       const y = rect.yStart + startOffset + i * config.spacing
 
-      const topSegs = polygonScanlineSegments(rotated, y - config.width / 2 + 0.5)
       const midSegs = polygonScanlineSegments(rotated, y)
+      const topSegs = polygonScanlineSegments(rotated, y - config.width / 2 + 0.5)
       const botSegs = polygonScanlineSegments(rotated, y + config.width / 2 - 0.5)
 
       for (const [midStart, midEnd] of midSegs) {
