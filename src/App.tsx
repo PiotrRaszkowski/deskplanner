@@ -59,6 +59,9 @@ export default function App() {
             </div>
           </div>
           <div className="flex items-center gap-0.5">
+            <button onClick={() => { handleClear(); window.history.replaceState(null, '', window.location.pathname) }} className="p-1.5 rounded-md text-text-secondary hover:bg-surface-hover transition-colors" title="Nowy projekt">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+            </button>
             <button onClick={handleLoad} className="p-1.5 rounded-md text-text-secondary hover:bg-surface-hover transition-colors" title="Wczytaj projekt">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>
             </button>
