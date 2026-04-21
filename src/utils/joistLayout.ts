@@ -150,18 +150,18 @@ function optimalJoistPlan(segLen: number, sizes: BoardSize[], gap: number): Arra
   return bestPlan
 }
 
-function fillJoistColumn(
-  x: number, yStart: number, yEnd: number, joistWidth: number,
+function fillJoistRow(
+  xStart: number, xEnd: number, y: number, joistWidth: number,
   sizes: BoardSize[], gap: number,
   pool: JoistPool, mode: OffcutSettings['mode']
 ): PlacedJoist[] {
-  const segLen = yEnd - yStart
+  const segLen = xEnd - xStart
   if (segLen <= 0) return []
 
   const byId = new Map(sizes.map(s => [s.id, s]))
   const plan = optimalJoistPlan(segLen, sizes, gap)
   const placed: PlacedJoist[] = []
-  let cursor = yStart
+  let cursor = xStart
 
   for (const step of plan) {
     if (mode !== 'no-reuse') {
@@ -170,28 +170,28 @@ function fillJoistColumn(
         const joist = byId.get(match.id) || step.size
         pool.take(match.id, match.length)
         if (step.len < match.length) pool.add(match.id, match.length - step.len)
-        placed.push(makeJoist(x, cursor, step.len, joistWidth, joist, step.len < match.length, true, match.length))
+        placed.push(makeJoistH(cursor, y, step.len, joistWidth, joist, step.len < match.length, true, match.length))
         cursor += step.len + gap
         continue
       }
     }
 
     if (step.cut) pool.add(step.size.id, step.size.length - step.len)
-    placed.push(makeJoist(x, cursor, step.len, joistWidth, step.size, step.cut, false, step.size.length))
+    placed.push(makeJoistH(cursor, y, step.len, joistWidth, step.size, step.cut, false, step.size.length))
     cursor += step.len + gap
   }
 
   return placed
 }
 
-function makeJoist(
+function makeJoistH(
   x: number, y: number, length: number, width: number,
   joistSize: BoardSize, cut: boolean, fromOffcut: boolean, originalLength: number
 ): PlacedJoist {
   return {
     corners: [
-      { x: x - width / 2, y }, { x: x + width / 2, y },
-      { x: x + width / 2, y: y + length }, { x: x - width / 2, y: y + length },
+      { x, y: y - width / 2 }, { x: x + length, y: y - width / 2 },
+      { x: x + length, y: y + width / 2 }, { x, y: y + width / 2 },
     ],
     joistSize, cut, fromOffcut, originalLength, actualLength: length,
   }
@@ -211,15 +211,15 @@ export function calculateJoistLayout(
   const allPlaced: PlacedJoist[] = []
 
   for (const rect of rects) {
-    const rectWidth = rect.xEnd - rect.xStart
-    const joistCount = Math.max(1, Math.floor(rectWidth / config.spacing) + 1)
+    const rectHeight = rect.yEnd - rect.yStart
+    const joistCount = Math.max(1, Math.floor(rectHeight / config.spacing) + 1)
     const usedSpan = (joistCount - 1) * config.spacing
-    const startOffset = (rectWidth - usedSpan) / 2
+    const startOffset = (rectHeight - usedSpan) / 2
 
     for (let i = 0; i < joistCount; i++) {
-      const x = rect.xStart + startOffset + i * config.spacing
-      allPlaced.push(...fillJoistColumn(
-        x, rect.yStart, rect.yEnd, config.width,
+      const y = rect.yStart + startOffset + i * config.spacing
+      allPlaced.push(...fillJoistRow(
+        rect.xStart, rect.xEnd, y, config.width,
         config.sizes, 0, pool, offcutSettings.mode
       ))
     }

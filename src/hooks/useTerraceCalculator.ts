@@ -73,8 +73,8 @@ export function useTerraceCalculator() {
         return
       }
       const boardResult = calculateLayout(polygon, boards, gaps, angle, startPoint, offcutSettings)
-      const upperResult = calculateJoistLayout(polygon, upperJoists, angle, joistOffcutSettings)
-      const lowerResult = calculateJoistLayout(polygon, lowerJoists, angle + 90, joistOffcutSettings)
+      const upperResult = calculateJoistLayout(polygon, upperJoists, angle + 90, joistOffcutSettings)
+      const lowerResult = calculateJoistLayout(polygon, lowerJoists, angle, joistOffcutSettings)
       setResult({ boards: boardResult, upperJoists: upperResult, lowerJoists: lowerResult })
     }, 150)
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
