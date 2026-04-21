@@ -215,6 +215,11 @@ function JoistTable({ title, subtitle, result, config, color }: {
   for (const c of Object.values(result.joistCounts)) { totalFull += c.full; totalCut += c.cut }
   const sizeMap = new Map(config.sizes.map((s) => [s.id, s]))
 
+  let orderMeters = 0
+  for (const j of result.placedJoists) {
+    if (!j.fromOffcut) orderMeters += j.originalLength
+  }
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
@@ -228,7 +233,7 @@ function JoistTable({ title, subtitle, result, config, color }: {
         <div className="flex items-center justify-between">
           <div>
             <div className="text-[10px] text-text-muted uppercase">Do kupienia</div>
-            <div className="text-xl font-bold text-success font-mono">{result.totalToOrder} szt.</div>
+            <div className="text-xl font-bold text-success font-mono">{result.totalToOrder} szt. <span className="text-base font-semibold text-text-muted">({(orderMeters / 1000).toFixed(1)} mb)</span></div>
           </div>
           <div className="text-right text-xs text-text-muted">
             <div>{totalFull} pełnych</div>
