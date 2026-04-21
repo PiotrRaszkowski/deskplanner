@@ -1,4 +1,6 @@
 import type { GapConfig as GapConfigType } from '../types'
+import HelpTooltip from './HelpTooltip'
+import { t } from '../utils/i18n'
 
 interface GapConfigProps {
   gaps: GapConfigType
@@ -8,7 +10,7 @@ interface GapConfigProps {
 export default function GapConfig({ gaps, onGapsChange }: GapConfigProps) {
   return (
     <div className="flex flex-col gap-3">
-      <h2 className="text-sm font-semibold text-text-primary uppercase tracking-wider">Dylatacje</h2>
+      <h2 className="text-sm font-semibold text-text-primary uppercase tracking-wider flex items-center gap-1.5">{t('gaps.title')} <HelpTooltip textKey="gaps.help" /></h2>
       <div className="flex gap-4">
         <label className="flex flex-col text-xs text-text-muted">
           Wzdłuż (mm)

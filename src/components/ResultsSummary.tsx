@@ -1,4 +1,6 @@
 import type { LayoutResult, BoardSize } from '../types'
+import HelpTooltip from './HelpTooltip'
+import { t } from '../utils/i18n'
 
 interface ResultsSummaryProps {
   result: LayoutResult
@@ -27,7 +29,7 @@ export default function ResultsSummary({ result, boards }: ResultsSummaryProps) 
 
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="text-sm font-semibold text-text-primary uppercase tracking-wider">Wyniki</h2>
+      <h2 className="text-sm font-semibold text-text-primary uppercase tracking-wider flex items-center gap-1.5">{t('results.title')} <HelpTooltip textKey="results.help" /></h2>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-xl bg-accent/5 border border-accent/15 p-3 text-center">

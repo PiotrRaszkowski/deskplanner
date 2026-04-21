@@ -6,6 +6,7 @@ import AngleSelector from './components/AngleSelector'
 import ResultsSummary from './components/ResultsSummary'
 import JoistConfig from './components/JoistConfig'
 import OffcutConfig from './components/OffcutConfig'
+import Onboarding from './components/Onboarding'
 import { useTerraceCalculator } from './hooks/useTerraceCalculator'
 import { exportLayoutSvg, downloadSvg } from './utils/exportSvg'
 
@@ -13,6 +14,8 @@ type SidebarTab = 'boards' | 'joists'
 type ResultTab = 'boards' | 'joists'
 
 export default function App() {
+  const [showOnboarding, setShowOnboarding] = useState(true)
+  const [forceOnboarding, setForceOnboarding] = useState(false)
   const {
     polygon, boards, gaps, angle, startPoint,
     upperJoists, lowerJoists, offcutSettings,
@@ -101,6 +104,10 @@ export default function App() {
             <button onClick={() => setResultsOpen(!resultsOpen)} className="p-1.5 rounded-md text-text-secondary hover:bg-surface-hover transition-colors" title="Panel wyników">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 4.5h14.25M3 9h9.75M3 13.5h5.25m5.25-.75L17.25 9m0 0L21 12.75M17.25 9v12" /></svg>
             </button>
+            <div className="w-px h-4 bg-border-subtle mx-1" />
+            <button onClick={() => { setForceOnboarding(true); setShowOnboarding(true) }} className="p-1.5 rounded-md text-text-secondary hover:bg-surface-hover transition-colors" title="Pomoc">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M12 18.75h.008v.008H12v-.008z" /></svg>
+            </button>
           </div>
         </div>
       </header>
@@ -173,6 +180,10 @@ export default function App() {
           </aside>
         )}
       </div>
+
+      {showOnboarding && (
+        <Onboarding forceShow={forceOnboarding} onDone={() => { setShowOnboarding(false); setForceOnboarding(false) }} />
+      )}
     </div>
   )
 }

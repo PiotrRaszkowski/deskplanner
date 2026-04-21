@@ -1,4 +1,6 @@
 import type { OffcutSettings, OffcutMode } from '../types'
+import HelpTooltip from './HelpTooltip'
+import { t } from '../utils/i18n'
 
 interface OffcutConfigProps {
   settings: OffcutSettings
@@ -14,7 +16,7 @@ const MODES: Array<{ value: OffcutMode; label: string; desc: string }> = [
 export default function OffcutConfig({ settings, onChange }: OffcutConfigProps) {
   return (
     <div className="flex flex-col gap-3">
-      <h2 className="text-sm font-semibold text-text-primary uppercase tracking-wider">Odcinki / reuse</h2>
+      <h2 className="text-sm font-semibold text-text-primary uppercase tracking-wider flex items-center gap-1.5">{t('offcut.title')} <HelpTooltip textKey="offcut.help" /></h2>
       <div className="flex flex-col gap-1.5">
         {MODES.map((m) => (
           <label

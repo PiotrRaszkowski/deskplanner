@@ -1,3 +1,6 @@
+import HelpTooltip from './HelpTooltip'
+import { t } from '../utils/i18n'
+
 interface AngleSelectorProps {
   angle: number
   onAngleChange: (angle: number) => void
@@ -8,7 +11,7 @@ const QUICK_ANGLES = [0, 45, 90, 135]
 export default function AngleSelector({ angle, onAngleChange }: AngleSelectorProps) {
   return (
     <div className="flex flex-col gap-3">
-      <h2 className="text-sm font-semibold text-text-primary uppercase tracking-wider">Kąt układania deski</h2>
+      <h2 className="text-sm font-semibold text-text-primary uppercase tracking-wider flex items-center gap-1.5">{t('angle.title')} <HelpTooltip textKey="angle.help" /></h2>
       <div className="flex items-center gap-3">
         <input
           type="range"

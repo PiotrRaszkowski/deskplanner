@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import type { BoardSize } from '../types'
+import HelpTooltip from './HelpTooltip'
+import { t } from '../utils/i18n'
 
 interface BoardConfigProps {
   boards: BoardSize[]
@@ -29,7 +31,7 @@ export default function BoardConfig({ boards, onBoardsChange }: BoardConfigProps
 
   return (
     <div className="flex flex-col gap-3">
-      <h2 className="text-sm font-semibold text-text-primary uppercase tracking-wider">Dostępne deski</h2>
+      <h2 className="text-sm font-semibold text-text-primary uppercase tracking-wider flex items-center gap-1.5">{t('boards.title')} <HelpTooltip textKey="boards.help" /></h2>
       <div className="flex flex-col gap-1.5">
         {boards.map((board, i) => (
           <div key={board.id} className="flex items-center justify-between bg-surface rounded-lg px-3 py-2 border border-border-subtle">
