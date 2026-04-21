@@ -164,34 +164,42 @@ function fillJoistColumn(
   let cursor = yStart
 
   for (const step of plan) {
-    if (mode !== 'no-reuse') {
-      const match = pool.findBestFit(step.len)
-      if (match && match.length >= step.len) {
-        const joist = byId.get(match.id) || step.size
-        pool.take(match.id, match.length)
-        const useLen = step.len
-        if (useLen < match.length) pool.add(match.id, match.length - useLen)
-        placed.push(makeJoist(x, cursor, useLen, joistWidth, joist, useLen < match.length, true, match.length))
-        cursor += useLen + gap
-        continue
-      }
+    let remaining = step.len
 
-      if (mode === 'reuse-aggressive') {
-        const largest = pool.findLargest()
-        if (largest && largest.length >= 100) {
-          const joist = byId.get(largest.id) || step.size
-          pool.take(largest.id, largest.length)
-          const useLen = Math.min(largest.length, step.len)
-          placed.push(makeJoist(x, cursor, useLen, joistWidth, joist, false, true, largest.length))
-          cursor += useLen + gap
-          continue
+    while (remaining > 0) {
+      if (mode !== 'no-reuse') {
+        const match = pool.findBestFit(remaining)
+        if (match && match.length >= remaining) {
+          const joist = byId.get(match.id) || step.size
+          pool.take(match.id, match.length)
+          if (remaining < match.length) pool.add(match.id, match.length - remaining)
+          placed.push(makeJoist(x, cursor, remaining, joistWidth, joist, remaining < match.length, true, match.length))
+          cursor += remaining
+          remaining = 0
+          break
+        }
+
+        if (mode === 'reuse-aggressive') {
+          const largest = pool.findLargest()
+          if (largest && largest.length >= 50) {
+            const joist = byId.get(largest.id) || step.size
+            pool.take(largest.id, largest.length)
+            const useLen = Math.min(largest.length, remaining)
+            placed.push(makeJoist(x, cursor, useLen, joistWidth, joist, false, true, largest.length))
+            cursor += useLen
+            remaining -= useLen
+            continue
+          }
         }
       }
+
+      if (step.cut && remaining === step.len) pool.add(step.size.id, step.size.length - step.len)
+      placed.push(makeJoist(x, cursor, remaining, joistWidth, step.size, step.cut, false, step.size.length))
+      cursor += remaining
+      remaining = 0
     }
 
-    if (step.cut) pool.add(step.size.id, step.size.length - step.len)
-    placed.push(makeJoist(x, cursor, step.len, joistWidth, step.size, step.cut, false, step.size.length))
-    cursor += step.len + gap
+    cursor += gap
   }
 
   return placed
