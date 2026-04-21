@@ -248,17 +248,7 @@ export function calculateJoistLayout(
     const h = rect.yEnd - rect.yStart
 
     if (direction === 'upper') {
-      const joistCount = Math.max(1, Math.floor(h / config.spacing) + 1)
-      const usedSpan = (joistCount - 1) * config.spacing
-      const offset = (h - usedSpan) / 2
-      for (let i = 0; i < joistCount; i++) {
-        const y = rect.yStart + offset + i * config.spacing
-        allPlaced.push(...fillJoistLine(
-          rect.xStart, rect.xEnd, y, config.width, true,
-          config.sizes, pool, offcutSettings.mode, offcutSettings.minLength
-        ))
-      }
-    } else {
+      // Górne: prostopadłe do desek = biegną wzdłuż Y, rozmieszczone co spacing wzdłuż X
       const joistCount = Math.max(1, Math.floor(w / config.spacing) + 1)
       const usedSpan = (joistCount - 1) * config.spacing
       const offset = (w - usedSpan) / 2
@@ -266,6 +256,18 @@ export function calculateJoistLayout(
         const x = rect.xStart + offset + i * config.spacing
         allPlaced.push(...fillJoistLine(
           rect.yStart, rect.yEnd, x, config.width, false,
+          config.sizes, pool, offcutSettings.mode, offcutSettings.minLength
+        ))
+      }
+    } else {
+      // Dolne: zgodne z deskami = biegną wzdłuż X, rozmieszczone co spacing wzdłuż Y
+      const joistCount = Math.max(1, Math.floor(h / config.spacing) + 1)
+      const usedSpan = (joistCount - 1) * config.spacing
+      const offset = (h - usedSpan) / 2
+      for (let i = 0; i < joistCount; i++) {
+        const y = rect.yStart + offset + i * config.spacing
+        allPlaced.push(...fillJoistLine(
+          rect.xStart, rect.xEnd, y, config.width, true,
           config.sizes, pool, offcutSettings.mode, offcutSettings.minLength
         ))
       }
