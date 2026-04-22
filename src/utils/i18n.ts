@@ -182,8 +182,14 @@ const translations: Record<string, { pl: string; en: string }> = {
   'joist_results.pcs': { pl: 'szt.', en: 'pcs' },
   'joist_results.mb': { pl: 'mb', en: 'rm' },
 
-  // Changelog
+  // Changelog & Bug report
   'help.changelog_title': { pl: 'Co nowego', en: 'What\'s new' },
+  'help.bug_title': { pl: 'Zgłoś błąd', en: 'Report a bug' },
+  'help.bug_text': {
+    pl: 'Znalazłeś błąd lub masz sugestię? Zgłoś na GitHubie lub wyślij email. Dołącz link do projektu (przycisk udostępnij) — pomoże nam odtworzyć problem.',
+    en: 'Found a bug or have a suggestion? Report on GitHub or send email. Include a project link (share button) — it helps us reproduce the issue.',
+  },
+  'help.bug_github': { pl: 'Zgłoś na GitHubie', en: 'Report on GitHub' },
 
   // Onboarding
   'onboarding.step1_title': { pl: 'Narysuj kształt tarasu', en: 'Draw terrace shape' },

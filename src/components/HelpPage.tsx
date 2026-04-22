@@ -16,6 +16,7 @@ const SECTIONS = [
   { key: 'export', icon: '📤' },
   { key: 'shortcuts', icon: '⌨️' },
   { key: 'changelog', icon: '📋' },
+  { key: 'bug', icon: '🐛' },
 ]
 
 function ChangelogView() {
@@ -51,13 +52,12 @@ function ChangelogView() {
 
 export default function HelpPage({ onClose }: HelpPageProps) {
   const [active, setActive] = useState(0)
-  const isChangelog = SECTIONS[active].key === 'changelog'
 
   return (
     <div className="fixed inset-0 z-50 flex bg-black/40 backdrop-blur-sm">
       <div className="bg-surface-elevated w-full max-w-3xl mx-auto my-4 rounded-2xl shadow-xl border border-border-subtle flex flex-col overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
-          <h1 className="text-lg font-semibold text-text-primary">{t('help.title')} — DeckNinja v1.0.0</h1>
+          <h1 className="text-lg font-semibold text-text-primary">{t('help.title')} — DeckNinja v1.1.0</h1>
           <button onClick={onClose} className="px-4 py-1.5 bg-accent text-white text-sm rounded-lg hover:bg-accent-light transition-colors">
             {t('help.close')}
           </button>
@@ -80,24 +80,29 @@ export default function HelpPage({ onClose }: HelpPageProps) {
           </nav>
 
           <div className="flex-1 overflow-y-auto p-6">
-            {isChangelog ? (
-              <>
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="text-3xl">📋</span>
-                  <h2 className="text-xl font-semibold text-text-primary">{t('help.changelog_title')}</h2>
-                </div>
-                <ChangelogView />
-              </>
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-3xl">{SECTIONS[active].icon}</span>
+              <h2 className="text-xl font-semibold text-text-primary">{t(`help.${SECTIONS[active].key}_title`)}</h2>
+            </div>
+
+            {SECTIONS[active].key === 'changelog' ? (
+              <ChangelogView />
+            ) : SECTIONS[active].key === 'bug' ? (
+              <div className="flex flex-col gap-4">
+                <p className="text-sm text-text-secondary leading-relaxed">{t('help.bug_text')}</p>
+                <a
+                  href="https://github.com/PiotrRaszkowski/deckninja/issues/new"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block px-4 py-2 bg-accent text-white text-sm rounded-lg hover:bg-accent-light transition-colors"
+                >
+                  {t('help.bug_github')}
+                </a>
+              </div>
             ) : (
-              <>
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="text-3xl">{SECTIONS[active].icon}</span>
-                  <h2 className="text-xl font-semibold text-text-primary">{t(`help.${SECTIONS[active].key}_title`)}</h2>
-                </div>
-                <p className="text-sm text-text-secondary leading-relaxed whitespace-pre-line">
-                  {t(`help.${SECTIONS[active].key}_text`)}
-                </p>
-              </>
+              <p className="text-sm text-text-secondary leading-relaxed whitespace-pre-line">
+                {t(`help.${SECTIONS[active].key}_text`)}
+              </p>
             )}
           </div>
         </div>

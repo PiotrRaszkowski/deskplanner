@@ -53,6 +53,7 @@ export default function TerraceCanvas({ polygon, placedBoards, upperJoists, lowe
   const [visibleLayer, setVisibleLayer] = useState<VisibleLayer>('all')
   const [hoveredBoard, setHoveredBoard] = useState<number | null>(null)
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
+  const lastFitPolygon = useRef<string>('')
   const edgeInputRef = useRef<HTMLInputElement>(null)
   const panStart = useRef<Point>({ x: 0, y: 0 })
   const offsetStart = useRef<Point>({ x: 0, y: 0 })
@@ -98,6 +99,34 @@ export default function TerraceCanvas({ polygon, placedBoards, upperJoists, lowe
     },
     [snapToGrid, orthoMode, gridSize, currentPoints, scale]
   )
+
+  useEffect(() => {
+    if (polygon.length < 3) return
+    const key = polygon.map(p => `${p.x},${p.y}`).join(';')
+    if (key === lastFitPolygon.current) return
+    lastFitPolygon.current = key
+
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const rect = canvas.getBoundingClientRect()
+    const cw = rect.width || 800
+    const ch = rect.height || 500
+
+    const xs = polygon.map(p => p.x)
+    const ys = polygon.map(p => p.y)
+    const minX = Math.min(...xs), maxX = Math.max(...xs)
+    const minY = Math.min(...ys), maxY = Math.max(...ys)
+    const polyW = maxX - minX || 1
+    const polyH = maxY - minY || 1
+
+    const pad = 60
+    const newScale = Math.min((cw - pad * 2) / polyW, (ch - pad * 2) / polyH)
+    const cx = (minX + maxX) / 2
+    const cy = (minY + maxY) / 2
+
+    setScale(newScale)
+    setOffset({ x: cw / 2 - cx * newScale, y: ch / 2 - cy * newScale })
+  }, [polygon])
 
   const screenToWorld = useCallback(
     (sx: number, sy: number): Point => ({

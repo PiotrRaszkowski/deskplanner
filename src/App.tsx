@@ -62,7 +62,7 @@ export default function App() {
               </svg>
             </div>
             <div>
-              <h1 className="text-sm font-semibold text-text-primary tracking-tight">DeckNinja <span className="text-[9px] font-normal text-text-muted">v1.0.0</span></h1>
+              <h1 className="text-sm font-semibold text-text-primary tracking-tight">DeckNinja <span className="text-[9px] font-normal text-text-muted">v1.1.0</span></h1>
             </div>
           </div>
           <div className="flex items-center gap-0.5">

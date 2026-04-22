@@ -2,9 +2,35 @@ import type { Point, BoardSize, JoistConfig, PlacedJoist, JoistResult, Offcut, O
 import {
   rotatePolygon,
   polygonCentroid,
+  boundingBox,
   polygonScanlineSegments,
   rotatePoint,
 } from './geometry'
+
+function isRectilinearPoly(polygon: Point[]): boolean {
+  for (let i = 0; i < polygon.length; i++) {
+    const a = polygon[i], b = polygon[(i + 1) % polygon.length]
+    if (Math.abs(b.x - a.x) > 1 && Math.abs(b.y - a.y) > 1) return false
+  }
+  return true
+}
+
+function getVerticalSegments(polygon: Point[], x: number): Array<[number, number]> {
+  const ys: number[] = []
+  for (let i = 0; i < polygon.length; i++) {
+    const j = (i + 1) % polygon.length
+    const p1 = polygon[i], p2 = polygon[j]
+    if ((p1.x <= x && p2.x <= x) || (p1.x > x && p2.x > x)) continue
+    if (p1.x === p2.x) continue
+    const t = (x - p1.x) / (p2.x - p1.x)
+    if (t < 0 || t >= 1) continue
+    ys.push(p1.y + t * (p2.y - p1.y))
+  }
+  ys.sort((a, b) => a - b)
+  const segs: Array<[number, number]> = []
+  for (let i = 0; i + 1 < ys.length; i += 2) segs.push([ys[i], ys[i + 1]])
+  return segs
+}
 
 class JoistPool {
   private pool: Map<string, number[]> = new Map()
@@ -238,38 +264,70 @@ export function calculateJoistLayout(
 
   const centroid = polygonCentroid(polygon)
   const rotatedPoly = rotatePolygon(polygon, -boardAngle, centroid)
-  const rects = minimalDecompose(rotatedPoly)
+  const rectilinear = isRectilinearPoly(rotatedPoly)
+  const rects = rectilinear ? minimalDecompose(rotatedPoly) : []
+  const bb = boundingBox(rotatedPoly)
 
   const pool = new JoistPool(offcutSettings.minLength)
   const allPlaced: PlacedJoist[] = []
 
-  for (const rect of rects) {
-    const w = rect.xEnd - rect.xStart
-    const h = rect.yEnd - rect.yStart
+  if (rectilinear) {
+    for (const rect of rects) {
+      const w = rect.xEnd - rect.xStart
+      const h = rect.yEnd - rect.yStart
 
+      if (direction === 'upper') {
+        const joistCount = Math.max(1, Math.floor(w / config.spacing) + 1)
+        const usedSpan = (joistCount - 1) * config.spacing
+        const offset = (w - usedSpan) / 2
+        for (let i = 0; i < joistCount; i++) {
+          const x = rect.xStart + offset + i * config.spacing
+          const segs = getVerticalSegments(rotatedPoly, x)
+          for (const [segStart, segEnd] of segs) {
+            const cs = Math.max(segStart, rect.yStart)
+            const ce = Math.min(segEnd, rect.yEnd)
+            if (ce - cs > 1) allPlaced.push(...fillJoistLine(cs, ce, x, config.width, false, config.sizes, pool, offcutSettings.mode, offcutSettings.minLength))
+          }
+        }
+      } else {
+        const joistCount = Math.max(1, Math.floor(h / config.spacing) + 1)
+        const usedSpan = (joistCount - 1) * config.spacing
+        const offset = (h - usedSpan) / 2
+        for (let i = 0; i < joistCount; i++) {
+          const y = rect.yStart + offset + i * config.spacing
+          const segs = polygonScanlineSegments(rotatedPoly, y)
+          for (const [segStart, segEnd] of segs) {
+            const cs = Math.max(segStart, rect.xStart)
+            const ce = Math.min(segEnd, rect.xEnd)
+            if (ce - cs > 1) allPlaced.push(...fillJoistLine(cs, ce, y, config.width, true, config.sizes, pool, offcutSettings.mode, offcutSettings.minLength))
+          }
+        }
+      }
+    }
+  } else {
     if (direction === 'upper') {
-      // Górne: prostopadłe do desek = biegną wzdłuż Y, rozmieszczone co spacing wzdłuż X
-      const joistCount = Math.max(1, Math.floor(w / config.spacing) + 1)
+      const totalW = bb.maxX - bb.minX
+      const joistCount = Math.max(1, Math.floor(totalW / config.spacing) + 1)
       const usedSpan = (joistCount - 1) * config.spacing
-      const offset = (w - usedSpan) / 2
+      const offset = (totalW - usedSpan) / 2
       for (let i = 0; i < joistCount; i++) {
-        const x = rect.xStart + offset + i * config.spacing
-        allPlaced.push(...fillJoistLine(
-          rect.yStart, rect.yEnd, x, config.width, false,
-          config.sizes, pool, offcutSettings.mode, offcutSettings.minLength
-        ))
+        const x = bb.minX + offset + i * config.spacing
+        const segs = getVerticalSegments(rotatedPoly, x)
+        for (const [segStart, segEnd] of segs) {
+          if (segEnd - segStart > 1) allPlaced.push(...fillJoistLine(segStart, segEnd, x, config.width, false, config.sizes, pool, offcutSettings.mode, offcutSettings.minLength))
+        }
       }
     } else {
-      // Dolne: zgodne z deskami = biegną wzdłuż X, rozmieszczone co spacing wzdłuż Y
-      const joistCount = Math.max(1, Math.floor(h / config.spacing) + 1)
+      const totalH = bb.maxY - bb.minY
+      const joistCount = Math.max(1, Math.floor(totalH / config.spacing) + 1)
       const usedSpan = (joistCount - 1) * config.spacing
-      const offset = (h - usedSpan) / 2
+      const offset = (totalH - usedSpan) / 2
       for (let i = 0; i < joistCount; i++) {
-        const y = rect.yStart + offset + i * config.spacing
-        allPlaced.push(...fillJoistLine(
-          rect.xStart, rect.xEnd, y, config.width, true,
-          config.sizes, pool, offcutSettings.mode, offcutSettings.minLength
-        ))
+        const y = bb.minY + offset + i * config.spacing
+        const segs = polygonScanlineSegments(rotatedPoly, y)
+        for (const [segStart, segEnd] of segs) {
+          if (segEnd - segStart > 1) allPlaced.push(...fillJoistLine(segStart, segEnd, y, config.width, true, config.sizes, pool, offcutSettings.mode, offcutSettings.minLength))
+        }
       }
     }
   }

@@ -34,6 +34,67 @@ const L_SHAPE: Point[] = [
   { x: 5420, y: -1290 },
 ]
 
+const TRIANGLE: Point[] = [
+  { x: 0, y: 0 },
+  { x: 6000, y: 0 },
+  { x: 3000, y: 4000 },
+]
+
+const TRAPEZOID: Point[] = [
+  { x: 1000, y: 0 },
+  { x: 5000, y: 0 },
+  { x: 4000, y: 3000 },
+  { x: 2000, y: 3000 },
+]
+
+const PENTAGON: Point[] = [
+  { x: 3000, y: 0 },
+  { x: 5500, y: 1500 },
+  { x: 4500, y: 4000 },
+  { x: 1500, y: 4000 },
+  { x: 500, y: 1500 },
+]
+
+function checkBoardsInsidePolygon(placedBoards: import('../types').PlacedBoard[], polygon: Point[], tolerance = 5) {
+  let violations = 0
+  for (const board of placedBoards) {
+    const midY = (board.corners[0].y + board.corners[2].y) / 2
+    const boardMinX = Math.min(...board.corners.map(c => c.x))
+    const boardMaxX = Math.max(...board.corners.map(c => c.x))
+    const segments = polygonScanlineSegments(polygon, midY)
+    const inside = segments.some(([s, e]) => boardMinX >= s - tolerance && boardMaxX <= e + tolerance)
+    if (!inside) violations++
+  }
+  return violations
+}
+
+function checkNoOverlap(placedBoards: import('../types').PlacedBoard[]) {
+  const byRow = new Map<number, typeof placedBoards>()
+  for (const b of placedBoards) {
+    const rowY = Math.round(b.corners[0].y)
+    const row = byRow.get(rowY) || []
+    row.push(b)
+    byRow.set(rowY, row)
+  }
+  let overlaps = 0
+  for (const [, row] of byRow) {
+    row.sort((a, b) => a.corners[0].x - b.corners[0].x)
+    for (let i = 1; i < row.length; i++) {
+      if (row[i].corners[0].x < row[i - 1].corners[1].x - 1) overlaps++
+    }
+  }
+  return overlaps
+}
+
+function checkMaxBoardLength(placedBoards: import('../types').PlacedBoard[], boards: BoardSize[]) {
+  const maxLen = Math.max(...boards.map(b => b.length))
+  let violations = 0
+  for (const b of placedBoards) {
+    if (b.actualLength > maxLen + 1) violations++
+  }
+  return violations
+}
+
 describe('calculateLayout', () => {
   describe('basic rectangle', () => {
     it('all boards should be inside polygon bounds', () => {
@@ -422,5 +483,108 @@ describe('calculateLayout', () => {
         expect(rowYs[i]).toBeGreaterThanOrEqual(prevBottom - 1)
       }
     })
+  })
+
+  describe('triangle (non-rectilinear)', () => {
+    it('all boards should be inside polygon', () => {
+      const result = calculateLayout(TRIANGLE, BOARDS, GAPS, 0, null, NO_REUSE)
+      expect(result.placedBoards.length).toBeGreaterThan(0)
+      const violations = checkBoardsInsidePolygon(result.placedBoards, TRIANGLE)
+      expect(violations, `${violations} boards outside triangle`).toBe(0)
+    })
+
+    it('no boards should overlap', () => {
+      const result = calculateLayout(TRIANGLE, BOARDS, GAPS, 0, null, NO_REUSE)
+      expect(checkNoOverlap(result.placedBoards)).toBe(0)
+    })
+
+    it('no board longer than max available', () => {
+      const result = calculateLayout(TRIANGLE, BOARDS, GAPS, 0, null, NO_REUSE)
+      expect(checkMaxBoardLength(result.placedBoards, BOARDS)).toBe(0)
+    })
+
+    it('board area should not exceed polygon area', () => {
+      const result = calculateLayout(TRIANGLE, BOARDS, GAPS, 0, null, NO_REUSE)
+      const polyArea = polygonArea(TRIANGLE)
+      expect(result.boardArea).toBeLessThanOrEqual(polyArea + 1000)
+    })
+  })
+
+  describe('trapezoid (non-rectilinear)', () => {
+    it('all boards should be inside polygon', () => {
+      const result = calculateLayout(TRAPEZOID, BOARDS, GAPS, 0, null, NO_REUSE)
+      expect(result.placedBoards.length).toBeGreaterThan(0)
+      const violations = checkBoardsInsidePolygon(result.placedBoards, TRAPEZOID)
+      expect(violations, `${violations} boards outside trapezoid`).toBe(0)
+    })
+
+    it('no boards should overlap', () => {
+      const result = calculateLayout(TRAPEZOID, BOARDS, GAPS, 0, null, NO_REUSE)
+      expect(checkNoOverlap(result.placedBoards)).toBe(0)
+    })
+
+    it('no board longer than max available', () => {
+      const result = calculateLayout(TRAPEZOID, BOARDS, GAPS, 0, null, NO_REUSE)
+      expect(checkMaxBoardLength(result.placedBoards, BOARDS)).toBe(0)
+    })
+  })
+
+  describe('pentagon (non-rectilinear)', () => {
+    it('all boards should be inside polygon', () => {
+      const result = calculateLayout(PENTAGON, BOARDS, GAPS, 0, null, NO_REUSE)
+      expect(result.placedBoards.length).toBeGreaterThan(0)
+      const violations = checkBoardsInsidePolygon(result.placedBoards, PENTAGON)
+      expect(violations, `${violations} boards outside pentagon`).toBe(0)
+    })
+
+    it('no boards should overlap', () => {
+      const result = calculateLayout(PENTAGON, BOARDS, GAPS, 0, null, NO_REUSE)
+      expect(checkNoOverlap(result.placedBoards)).toBe(0)
+    })
+  })
+
+  describe('non-rectilinear at angle', () => {
+    it('triangle at 45°: produces boards with valid lengths', () => {
+      const result = calculateLayout(TRIANGLE, BOARDS, GAPS, 45, null, NO_REUSE)
+      expect(result.placedBoards.length).toBeGreaterThan(0)
+      expect(checkMaxBoardLength(result.placedBoards, BOARDS)).toBe(0)
+      expect(result.boardArea).toBeGreaterThan(0)
+    })
+
+    it('trapezoid at 90°: produces boards with valid lengths', () => {
+      const result = calculateLayout(TRAPEZOID, BOARDS, GAPS, 90, null, NO_REUSE)
+      expect(result.placedBoards.length).toBeGreaterThan(0)
+      expect(checkMaxBoardLength(result.placedBoards, BOARDS)).toBe(0)
+      expect(result.boardArea).toBeGreaterThan(0)
+    })
+  })
+
+  describe('universal invariants (all shapes)', () => {
+    const shapes = [
+      { name: 'rectangle', poly: RECTANGLE },
+      { name: 'L-shape', poly: L_SHAPE },
+      { name: 'triangle', poly: TRIANGLE },
+      { name: 'trapezoid', poly: TRAPEZOID },
+      { name: 'pentagon', poly: PENTAGON },
+    ]
+
+    for (const { name, poly } of shapes) {
+      it(`${name}: totalBoardsToOrder >= 0`, () => {
+        const result = calculateLayout(poly, BOARDS, GAPS, 0, null, REUSE_EXACT)
+        expect(result.totalBoardsToOrder).toBeGreaterThanOrEqual(0)
+      })
+
+      it(`${name}: wastePercent between 0 and 100`, () => {
+        const result = calculateLayout(poly, BOARDS, GAPS, 0, null, NO_REUSE)
+        expect(result.wastePercent).toBeGreaterThanOrEqual(0)
+        expect(result.wastePercent).toBeLessThanOrEqual(100)
+      })
+
+      it(`${name}: reuse-exact <= no-reuse boards`, () => {
+        const noReuse = calculateLayout(poly, BOARDS, GAPS, 0, null, NO_REUSE)
+        const withReuse = calculateLayout(poly, BOARDS, GAPS, 0, null, REUSE_EXACT)
+        expect(withReuse.totalBoardsToOrder).toBeLessThanOrEqual(noReuse.totalBoardsToOrder)
+      })
+    }
   })
 })

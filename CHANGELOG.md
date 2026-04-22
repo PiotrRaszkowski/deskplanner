@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.1.0] - 2026-04-22
+
+### Features
+- Support for non-rectilinear polygons (triangles, trapezoids, pentagons) via scanline algorithm
+- Auto-fit: canvas centers and zooms to polygon on load (URL/JSON import)
+- Bug report section in help page (GitHub Issues link)
+- 49 unit tests covering 5 polygon shapes
+
+### Fixed
+- Boards extending outside non-rectangular polygons
+- Joists clipped to polygon boundaries for all shapes
+- Repo renamed to deckninja, Docker image updated
+
 ## [1.0.0] - 2026-04-22
 
 ### Features

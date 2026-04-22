@@ -224,6 +224,18 @@ function makeBoard(
   }
 }
 
+function isRectilinear(polygon: Point[]): boolean {
+  const n = polygon.length
+  for (let i = 0; i < n; i++) {
+    const a = polygon[i]
+    const b = polygon[(i + 1) % n]
+    const dx = Math.abs(b.x - a.x)
+    const dy = Math.abs(b.y - a.y)
+    if (dx > 1 && dy > 1) return false
+  }
+  return true
+}
+
 export function calculateLayout(
   polygon: Point[],
   availableBoards: BoardSize[],
@@ -263,7 +275,8 @@ export function calculateLayout(
     }
   }
 
-  const rects = minimalDecompose(rotated)
+  const rectilinear = isRectilinear(rotated)
+  const rects = rectilinear ? minimalDecompose(rotated) : []
 
   let startY = fromBottom ? bb.maxY : bb.minY
   if (startPoint) {
@@ -301,21 +314,40 @@ export function calculateLayout(
     const rowTop = row.y
     const rowBot = row.y + row.height
 
-    for (const rect of rects) {
-      if (rowBot <= rect.yStart + 0.5 || rowTop >= rect.yEnd - 0.5) continue
+    if (rectilinear) {
+      for (const rect of rects) {
+        if (rowBot <= rect.yStart + 0.5 || rowTop >= rect.yEnd - 0.5) continue
+        const clippedTop = Math.max(rowTop, rect.yStart)
+        const clippedBot = Math.min(rowBot, rect.yEnd)
+        const clippedHeight = clippedBot - clippedTop
+        if (clippedHeight < minRipWidth) continue
+        const isRip = row.isRip || clippedHeight < row.height - 1
+        allPlaced.push(...fillRow(
+          rect.xStart, rect.xEnd, clippedTop, clippedHeight, isRip,
+          availableBoards, gaps.front, pool, offcutSettings.mode, fromRight
+        ))
+      }
+    } else {
+      const midSegs = polygonScanlineSegments(rotated, (rowTop + rowBot) / 2)
+      const topSegs = polygonScanlineSegments(rotated, rowTop + 0.5)
+      const botSegs = polygonScanlineSegments(rotated, rowBot - 0.5)
 
-      const clippedTop = Math.max(rowTop, rect.yStart)
-      const clippedBot = Math.min(rowBot, rect.yEnd)
-      const clippedHeight = clippedBot - clippedTop
+      for (const [midStart, midEnd] of midSegs) {
+        let xStart = midStart, xEnd = midEnd
+        for (const [ts, te] of topSegs) {
+          if (ts < xEnd && te > xStart) { xStart = Math.max(xStart, ts); xEnd = Math.min(xEnd, te) }
+        }
+        for (const [bs, be] of botSegs) {
+          if (bs < xEnd && be > xStart) { xStart = Math.max(xStart, bs); xEnd = Math.min(xEnd, be) }
+        }
+        if (xEnd - xStart < 1) continue
 
-      if (clippedHeight < minRipWidth) continue
-
-      const isRip = row.isRip || clippedHeight < row.height - 1
-
-      allPlaced.push(...fillRow(
-        rect.xStart, rect.xEnd, clippedTop, clippedHeight, isRip,
-        availableBoards, gaps.front, pool, offcutSettings.mode, fromRight
-      ))
+        const isRip = row.isRip || xEnd - xStart < midEnd - midStart - 1
+        allPlaced.push(...fillRow(
+          xStart, xEnd, rowTop, row.height, isRip,
+          availableBoards, gaps.front, pool, offcutSettings.mode, fromRight
+        ))
+      }
     }
   }
 
