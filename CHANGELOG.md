@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0] - 2026-04-22
+
+### Features
+- Footer with disclaimer (calculations are approximate)
+- Privacy policy page (PL/EN) - data processing, analytics, localStorage, link sharing
+- All new strings translated via i18n
+
 ## [1.1.0] - 2026-04-22
 
 ### Features

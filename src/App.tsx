@@ -8,6 +8,7 @@ import JoistConfig from './components/JoistConfig'
 import OffcutConfig from './components/OffcutConfig'
 import Onboarding from './components/Onboarding'
 import HelpPage from './components/HelpPage'
+import PrivacyPolicy from './components/PrivacyPolicy'
 import { useTerraceCalculator } from './hooks/useTerraceCalculator'
 import { useLang } from './utils/i18n'
 import { exportLayoutSvg, downloadSvg } from './utils/exportSvg'
@@ -23,6 +24,7 @@ export default function App() {
   const [forceOnboarding, setForceOnboarding] = useState(false)
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
   const [showHelp, setShowHelp] = useState(false)
+  const [showPrivacy, setShowPrivacy] = useState(false)
   const {
     polygon, boards, gaps, angle, startPoint,
     upperJoists, lowerJoists, offcutSettings, joistOffcutSettings,
@@ -62,7 +64,7 @@ export default function App() {
               </svg>
             </div>
             <div>
-              <h1 className="text-sm font-semibold text-text-primary tracking-tight">DeckNinja <span className="text-[9px] font-normal text-text-muted">v1.1.0</span></h1>
+              <h1 className="text-sm font-semibold text-text-primary tracking-tight">DeckNinja <span className="text-[9px] font-normal text-text-muted">v1.2.0</span></h1>
             </div>
           </div>
           <div className="flex items-center gap-0.5">
@@ -228,9 +230,18 @@ export default function App() {
 
       {showHelp && <HelpPage onClose={() => setShowHelp(false)} />}
 
+      {showPrivacy && <PrivacyPolicy onClose={() => setShowPrivacy(false)} />}
+
       {showOnboarding && (
         <Onboarding forceShow={forceOnboarding} onDone={() => { setShowOnboarding(false); setForceOnboarding(false) }} />
       )}
+
+      <footer className="flex-none border-t border-border-subtle px-4 py-1.5 bg-surface-elevated flex items-center justify-between text-[10px] text-text-muted">
+        <span>{t('footer.disclaimer')}</span>
+        <button onClick={() => setShowPrivacy(true)} className="underline hover:text-text-secondary transition-colors">
+          {t('footer.privacy')}
+        </button>
+      </footer>
     </div>
   )
 }

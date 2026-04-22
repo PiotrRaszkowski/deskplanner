@@ -57,7 +57,7 @@ export default function HelpPage({ onClose }: HelpPageProps) {
     <div className="fixed inset-0 z-50 flex bg-black/40 backdrop-blur-sm">
       <div className="bg-surface-elevated w-full max-w-3xl mx-auto my-4 rounded-2xl shadow-xl border border-border-subtle flex flex-col overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
-          <h1 className="text-lg font-semibold text-text-primary">{t('help.title')} — DeckNinja v1.1.0</h1>
+          <h1 className="text-lg font-semibold text-text-primary">{t('help.title')} — DeckNinja v1.2.0</h1>
           <button onClick={onClose} className="px-4 py-1.5 bg-accent text-white text-sm rounded-lg hover:bg-accent-light transition-colors">
             {t('help.close')}
           </button>

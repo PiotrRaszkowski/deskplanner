@@ -259,6 +259,47 @@ const translations: Record<string, { pl: string; en: string }> = {
     pl: 'Ctrl+Z = cofnij • Ctrl+Shift+Z = ponów • Esc = anuluj rysowanie / zamknij edycję • Alt+drag = przesuwanie canvas • Scroll = zoom • Double-click = zamknij wielokąt',
     en: 'Ctrl+Z = undo • Ctrl+Shift+Z = redo • Esc = cancel drawing / close edit • Alt+drag = pan canvas • Scroll = zoom • Double-click = close polygon',
   },
+
+  // Footer
+  'footer.disclaimer': {
+    pl: 'Obliczenia mają charakter poglądowy i nie stanowią oferty handlowej.',
+    en: 'Calculations are approximate and do not constitute a commercial offer.',
+  },
+  'footer.privacy': { pl: 'Polityka prywatności', en: 'Privacy policy' },
+
+  // Privacy policy
+  'privacy.title': { pl: 'Polityka prywatności', en: 'Privacy policy' },
+  'privacy.close': { pl: 'Zamknij', en: 'Close' },
+  'privacy.intro_title': { pl: 'Informacje ogólne', en: 'General information' },
+  'privacy.intro_text': {
+    pl: 'DeckNinja (deckninja.app) to aplikacja działająca w całości w przeglądarce użytkownika. Nie posiada backendu, nie przesyła danych na serwer i nie wymaga rejestracji ani logowania.',
+    en: 'DeckNinja (deckninja.app) is an application running entirely in the user\'s browser. It has no backend, does not send data to a server, and does not require registration or login.',
+  },
+  'privacy.data_title': { pl: 'Jakie dane przetwarzamy', en: 'What data we process' },
+  'privacy.data_text': {
+    pl: 'Aplikacja nie zbiera danych osobowych. Wszystkie dane projektu (kształt tarasu, parametry desek, wyniki) są przechowywane wyłącznie w przeglądarce użytkownika (localStorage). Dane nie są przesyłane na żaden serwer.',
+    en: 'The application does not collect personal data. All project data (terrace shape, board parameters, results) is stored exclusively in the user\'s browser (localStorage). No data is sent to any server.',
+  },
+  'privacy.analytics_title': { pl: 'Analityka', en: 'Analytics' },
+  'privacy.analytics_text': {
+    pl: 'Aplikacja może korzystać z anonimowej analityki (Umami) w celu zbierania zagregowanych statystyk odwiedzin (liczba wizyt, kraj, typ przeglądarki). Umami nie używa plików cookie i nie zbiera danych osobowych. Analityka jest zgodna z RODO bez konieczności zgody użytkownika.',
+    en: 'The application may use anonymous analytics (Umami) to collect aggregated visit statistics (visit count, country, browser type). Umami does not use cookies and does not collect personal data. Analytics is GDPR-compliant without requiring user consent.',
+  },
+  'privacy.localstorage_title': { pl: 'localStorage', en: 'localStorage' },
+  'privacy.localstorage_text': {
+    pl: 'Aplikacja zapisuje w localStorage: wybrany język (deckninja_lang), flagę onboardingu oraz zapisane projekty. Dane te nie opuszczają przeglądarki i można je usunąć czyszcząc dane witryny w ustawieniach przeglądarki.',
+    en: 'The application stores in localStorage: selected language (deckninja_lang), onboarding flag, and saved projects. This data does not leave the browser and can be removed by clearing site data in browser settings.',
+  },
+  'privacy.sharing_title': { pl: 'Udostępnianie linków', en: 'Link sharing' },
+  'privacy.sharing_text': {
+    pl: 'Funkcja „Udostępnij link" koduje konfigurację projektu w adresie URL. Link nie jest wysyłany na serwer — jest kopiowany do schowka użytkownika. Użytkownik sam decyduje komu go udostępni.',
+    en: 'The "Share link" feature encodes project configuration in the URL. The link is not sent to a server — it is copied to the user\'s clipboard. The user decides who to share it with.',
+  },
+  'privacy.contact_title': { pl: 'Kontakt', en: 'Contact' },
+  'privacy.contact_text': {
+    pl: 'W sprawach dotyczących prywatności: github.com/PiotrRaszkowski/deckninja/issues',
+    en: 'For privacy-related matters: github.com/PiotrRaszkowski/deckninja/issues',
+  },
 }
 
 export type Lang = 'pl' | 'en'
