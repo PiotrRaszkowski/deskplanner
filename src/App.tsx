@@ -9,6 +9,8 @@ import OffcutConfig from './components/OffcutConfig'
 import Onboarding from './components/Onboarding'
 import { useTerraceCalculator } from './hooks/useTerraceCalculator'
 import { exportLayoutSvg, downloadSvg } from './utils/exportSvg'
+import { encodeStateToHash } from './utils/shareUrl'
+import QRCode from 'qrcode'
 
 type SidebarTab = 'boards' | 'joists'
 type ResultTab = 'boards' | 'joists'
@@ -16,6 +18,7 @@ type ResultTab = 'boards' | 'joists'
 export default function App() {
   const [showOnboarding, setShowOnboarding] = useState(true)
   const [forceOnboarding, setForceOnboarding] = useState(false)
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
   const {
     polygon, boards, gaps, angle, startPoint,
     upperJoists, lowerJoists, offcutSettings, joistOffcutSettings,
@@ -92,6 +95,21 @@ export default function App() {
               ) : (
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>
               )}
+            </button>
+            <button
+              onClick={async () => {
+                const hash = encodeStateToHash({
+                  polygon, boards, gaps, angle, startPoint,
+                  upperJoists, lowerJoists, offcutSettings, joistOffcutSettings,
+                })
+                const url = `${window.location.origin}${window.location.pathname}#${hash}`
+                const dataUrl = await QRCode.toDataURL(url, { width: 300, margin: 2 })
+                setQrDataUrl(dataUrl)
+              }}
+              className="p-1.5 rounded-md text-text-secondary hover:bg-surface-hover transition-colors"
+              title="QR kod"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5z" /><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 6.75h.75v.75h-.75v-.75zM6.75 16.5h.75v.75h-.75v-.75zM16.5 6.75h.75v.75H16.5v-.75zM13.5 13.5h.75v.75h-.75v-.75zM13.5 19.5h.75v.75h-.75v-.75zM19.5 13.5h.75v.75h-.75v-.75zM19.5 19.5h.75v.75h-.75v-.75zM16.5 16.5h.75v.75H16.5v-.75z" /></svg>
             </button>
             <div className="w-px h-4 bg-border-subtle mx-1" />
             <button onClick={undo} disabled={!canUndo} className="p-1.5 rounded-md text-text-secondary hover:bg-surface-hover disabled:text-border-subtle transition-colors" title="Cofnij">
@@ -185,6 +203,17 @@ export default function App() {
           </aside>
         )}
       </div>
+
+      {qrDataUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setQrDataUrl(null)}>
+          <div className="bg-surface-elevated rounded-2xl shadow-xl border border-border-subtle p-6 flex flex-col items-center gap-4" onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold text-text-primary">Zeskanuj QR kod</h2>
+            <img src={qrDataUrl} alt="QR" className="rounded-lg" />
+            <p className="text-xs text-text-muted max-w-[280px] text-center">Zeskanuj telefonem aby otworzyć ten projekt na innym urządzeniu</p>
+            <button onClick={() => setQrDataUrl(null)} className="px-4 py-2 bg-accent text-white text-sm rounded-lg hover:bg-accent-light transition-colors">Zamknij</button>
+          </div>
+        </div>
+      )}
 
       {showOnboarding && (
         <Onboarding forceShow={forceOnboarding} onDone={() => { setShowOnboarding(false); setForceOnboarding(false) }} />
