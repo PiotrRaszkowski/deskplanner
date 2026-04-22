@@ -182,6 +182,9 @@ const translations: Record<string, { pl: string; en: string }> = {
   'joist_results.pcs': { pl: 'szt.', en: 'pcs' },
   'joist_results.mb': { pl: 'mb', en: 'rm' },
 
+  // Changelog
+  'help.changelog_title': { pl: 'Co nowego', en: 'What\'s new' },
+
   // Onboarding
   'onboarding.step1_title': { pl: 'Narysuj kształt tarasu', en: 'Draw terrace shape' },
   'onboarding.step1_desc': {
