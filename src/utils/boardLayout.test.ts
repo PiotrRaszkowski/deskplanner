@@ -12,6 +12,7 @@ const BOARDS: BoardSize[] = [
 const GAPS: GapConfig = { along: 5, front: 5 }
 const NO_REUSE: OffcutSettings = { mode: 'no-reuse', minLength: 500 }
 const REUSE_EXACT: OffcutSettings = { mode: 'reuse-exact', minLength: 500 }
+const REUSE_AGGRESSIVE: OffcutSettings = { mode: 'reuse-aggressive', minLength: 300 }
 
 const RECTANGLE: Point[] = [
   { x: 0, y: 0 },
@@ -264,6 +265,60 @@ describe('calculateLayout', () => {
       if (hasCuts) {
         expect(result.offcutsUsed + result.offcutsRemaining.length).toBeGreaterThan(0)
       }
+    })
+
+    it('reuse-aggressive should use more offcuts than reuse-exact when offcuts are shorter than needed', () => {
+      const rect: Point[] = [
+        { x: 0, y: 0 },
+        { x: 6100, y: 0 },
+        { x: 6100, y: 3000 },
+        { x: 0, y: 3000 },
+      ]
+      const singleBoard: BoardSize[] = [
+        { id: '140x4000', width: 140, length: 4000, label: '140 × 4000 mm' },
+      ]
+      const exact = calculateLayout(rect, singleBoard, GAPS, 0, null, REUSE_EXACT)
+      const aggressive = calculateLayout(rect, singleBoard, GAPS, 0, null, REUSE_AGGRESSIVE)
+
+      expect(aggressive.offcutsUsed).toBeGreaterThan(exact.offcutsUsed)
+    })
+
+    it('reuse-aggressive should order fewer boards than reuse-exact when offcuts are shorter than needed', () => {
+      const rect: Point[] = [
+        { x: 0, y: 0 },
+        { x: 6100, y: 0 },
+        { x: 6100, y: 3000 },
+        { x: 0, y: 3000 },
+      ]
+      const singleBoard: BoardSize[] = [
+        { id: '140x4000', width: 140, length: 4000, label: '140 × 4000 mm' },
+      ]
+      const exact = calculateLayout(rect, singleBoard, GAPS, 0, null, REUSE_EXACT)
+      const aggressive = calculateLayout(rect, singleBoard, GAPS, 0, null, REUSE_AGGRESSIVE)
+
+      expect(aggressive.totalBoardsToOrder).toBeLessThanOrEqual(exact.totalBoardsToOrder)
+    })
+
+    it('reuse-aggressive should not produce boards longer than max available', () => {
+      const wideRect: Point[] = [
+        { x: 0, y: 0 },
+        { x: 14800, y: 0 },
+        { x: 14800, y: 4220 },
+        { x: 0, y: 4220 },
+      ]
+      const result = calculateLayout(wideRect, BOARDS, GAPS, 0, null, REUSE_AGGRESSIVE)
+      expect(checkMaxBoardLength(result.placedBoards, BOARDS)).toBe(0)
+    })
+
+    it('reuse-aggressive should not produce overlapping boards', () => {
+      const wideRect: Point[] = [
+        { x: 0, y: 0 },
+        { x: 14800, y: 0 },
+        { x: 14800, y: 4220 },
+        { x: 0, y: 4220 },
+      ]
+      const result = calculateLayout(wideRect, BOARDS, GAPS, 0, null, REUSE_AGGRESSIVE)
+      expect(checkNoOverlap(result.placedBoards)).toBe(0)
     })
   })
 
@@ -584,6 +639,12 @@ describe('calculateLayout', () => {
         const noReuse = calculateLayout(poly, BOARDS, GAPS, 0, null, NO_REUSE)
         const withReuse = calculateLayout(poly, BOARDS, GAPS, 0, null, REUSE_EXACT)
         expect(withReuse.totalBoardsToOrder).toBeLessThanOrEqual(noReuse.totalBoardsToOrder)
+      })
+
+      it(`${name}: reuse-aggressive <= no-reuse boards`, () => {
+        const noReuse = calculateLayout(poly, BOARDS, GAPS, 0, null, NO_REUSE)
+        const aggressive = calculateLayout(poly, BOARDS, GAPS, 0, null, REUSE_AGGRESSIVE)
+        expect(aggressive.totalBoardsToOrder).toBeLessThanOrEqual(noReuse.totalBoardsToOrder)
       })
     }
   })

@@ -15,6 +15,8 @@ class OffcutPool {
 
   constructor(minLength: number) { this.minLength = minLength }
 
+  getMinLength(): number { return this.minLength }
+
   add(id: string, length: number) {
     if (length < this.minLength) return
     const list = this.pool.get(id) || []
@@ -171,26 +173,68 @@ function fillRow(
 
   const plan = optimalPlan(segLen, boards, gap)
 
-  let filled = 0
-  for (const step of plan) {
-    const remaining = segLen - filled
+  if (mode === 'reuse-aggressive') {
+    const sorted = [...boards].sort((a, b) => b.length - a.length)
+    let cursor = 0
+    while (cursor < segLen - 1) {
+      const remaining = segLen - cursor
 
-    if (mode !== 'no-reuse') {
-      const match = pool.findBestFit(step.len)
-      if (match && match.length >= step.len) {
-        const board = byId.get(match.id) || step.board
-        pool.take(match.id, match.length)
-        const useLen = Math.min(match.length, remaining)
-        if (useLen < match.length) pool.add(match.id, match.length - useLen)
-        pieces.push({ len: step.len, board, cut: step.len < match.length, fromOffcut: true, origLen: match.length })
-        filled += step.len + gap
+      const exactPool = pool.findBestFit(remaining)
+      if (exactPool) {
+        const board = byId.get(exactPool.id) || sorted[0]
+        pool.take(exactPool.id, exactPool.length)
+        const useLen = Math.min(exactPool.length, remaining)
+        if (useLen < exactPool.length) pool.add(exactPool.id, exactPool.length - useLen)
+        pieces.push({ len: useLen, board, cut: useLen < exactPool.length, fromOffcut: true, origLen: exactPool.length })
+        cursor += useLen + gap
         continue
       }
-    }
 
-    if (step.cut) pool.add(step.board.id, step.board.length - step.len)
-    pieces.push({ len: step.len, board: step.board, cut: step.cut, fromOffcut: false, origLen: step.board.length })
-    filled += step.len + gap
+      const largest = pool.findLargest()
+      if (largest && largest.length >= pool.getMinLength()) {
+        const board = byId.get(largest.id) || sorted[0]
+        pool.take(largest.id, largest.length)
+        const useLen = Math.min(largest.length, remaining)
+        pieces.push({ len: useLen, board, cut: true, fromOffcut: true, origLen: largest.length })
+        cursor += useLen + gap
+        continue
+      }
+
+      const fresh = sorted.find(b => b.length <= remaining)
+      if (fresh) {
+        pieces.push({ len: fresh.length, board: fresh, cut: false, fromOffcut: false, origLen: fresh.length })
+        cursor += fresh.length + gap
+        continue
+      }
+
+      const board = sorted[0]
+      const useLen = Math.min(board.length, remaining)
+      if (useLen < board.length) pool.add(board.id, board.length - useLen)
+      pieces.push({ len: useLen, board, cut: useLen < board.length, fromOffcut: false, origLen: board.length })
+      cursor += useLen + gap
+    }
+  } else {
+    let filled = 0
+    for (const step of plan) {
+      const remaining = segLen - filled
+
+      if (mode === 'reuse-exact') {
+        const match = pool.findBestFit(step.len)
+        if (match && match.length >= step.len) {
+          const board = byId.get(match.id) || step.board
+          pool.take(match.id, match.length)
+          const useLen = Math.min(match.length, remaining)
+          if (useLen < match.length) pool.add(match.id, match.length - useLen)
+          pieces.push({ len: step.len, board, cut: step.len < match.length, fromOffcut: true, origLen: match.length })
+          filled += step.len + gap
+          continue
+        }
+      }
+
+      if (step.cut) pool.add(step.board.id, step.board.length - step.len)
+      pieces.push({ len: step.len, board: step.board, cut: step.cut, fromOffcut: false, origLen: step.board.length })
+      filled += step.len + gap
+    }
   }
 
   const placed: PlacedBoard[] = []
