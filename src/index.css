@@ -18,6 +18,24 @@
   --color-canvas-bg: #fafbfc;
 }
 
+.dark {
+  --color-surface: #121318;
+  --color-surface-elevated: #1a1b23;
+  --color-surface-hover: #252631;
+  --color-border-subtle: #2e3040;
+  --color-border-accent: #818cf820;
+  --color-accent: #818cf8;
+  --color-accent-light: #a5b4fc;
+  --color-accent-glow: #818cf820;
+  --color-text-primary: #e8e9ed;
+  --color-text-secondary: #a0a4b8;
+  --color-text-muted: #6b6f82;
+  --color-success: #34d399;
+  --color-warning: #fbbf24;
+  --color-danger: #f87171;
+  --color-canvas-bg: #0f1015;
+}
+
 html, body, #root {
   margin: 0;
   height: 100%;

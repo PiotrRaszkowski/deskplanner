@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.0] - 2026-04-23
+
+### Features
+- Dark mode with three options: light, dark, system (auto-detect)
+- Theme preference saved in localStorage
+- Canvas grid, polygon, and hatching colors adapted for dark backgrounds
+- System preference listener (reacts to OS theme changes in real time)
+
 ## [1.2.0] - 2026-04-22
 
 ### Features

@@ -1,4 +1,5 @@
 import type { Point, PlacedBoard, PlacedJoist, BoardSize } from '../types'
+import { isDark } from './theme'
 
 const BOARD_PALETTE = [
   '#c8a06e',
@@ -96,7 +97,7 @@ function drawJoists(ctx: CanvasRenderingContext2D, joists: PlacedJoist[], scale:
       const maxX = Math.max(...corners.map((c) => c.x)) + 5
       const minY = Math.min(...corners.map((c) => c.y)) - 5
       const maxY = Math.max(...corners.map((c) => c.y)) + 5
-      ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)'
+      ctx.strokeStyle = isDark() ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)'
       ctx.lineWidth = 1
       ctx.beginPath()
       for (let d = minX + minY; d < maxX + maxY; d += 6) {
@@ -132,7 +133,8 @@ function drawGrid(ctx: CanvasRenderingContext2D, scale: number, offset: Point, w
   const startX = Math.floor(-offset.x / gridSpacePx) * gridSpacePx + (offset.x % gridSpacePx)
   const startY = Math.floor(-offset.y / gridSpacePx) * gridSpacePx + (offset.y % gridSpacePx)
 
-  ctx.strokeStyle = '#e8eaef'
+  const dark = isDark()
+  ctx.strokeStyle = dark ? '#252631' : '#e8eaef'
   ctx.lineWidth = 0.5
   ctx.beginPath()
   for (let x = startX; x < width; x += gridSpacePx) {
@@ -146,7 +148,7 @@ function drawGrid(ctx: CanvasRenderingContext2D, scale: number, offset: Point, w
   ctx.stroke()
 
   const majorEvery = 5
-  ctx.strokeStyle = '#cdd1da'
+  ctx.strokeStyle = dark ? '#3a3c4e' : '#cdd1da'
   ctx.lineWidth = 1
   ctx.beginPath()
   let idx = 0
@@ -167,7 +169,7 @@ function drawGrid(ctx: CanvasRenderingContext2D, scale: number, offset: Point, w
   }
   ctx.stroke()
 
-  ctx.fillStyle = '#8b90a3'
+  ctx.fillStyle = dark ? '#6b6f82' : '#8b90a3'
   ctx.font = '9px monospace'
   idx = 0
   for (let x = startX; x < width; x += gridSpacePx) {
@@ -198,10 +200,10 @@ function drawPolygon(ctx: CanvasRenderingContext2D, polygon: Point[], scale: num
     ctx.lineTo(p.x, p.y)
   }
   ctx.closePath()
-  ctx.strokeStyle = '#374151'
+  ctx.strokeStyle = isDark() ? '#a0a4b8' : '#374151'
   ctx.lineWidth = 2
   ctx.stroke()
-  ctx.fillStyle = 'rgba(99, 102, 241, 0.04)'
+  ctx.fillStyle = isDark() ? 'rgba(129, 140, 248, 0.08)' : 'rgba(99, 102, 241, 0.04)'
   ctx.fill()
 
   if (selectedEdge !== null) {
@@ -222,9 +224,9 @@ function drawPolygon(ctx: CanvasRenderingContext2D, polygon: Point[], scale: num
     const p = toScreen(polygon[i], scale, offset)
     ctx.beginPath()
     ctx.arc(p.x, p.y, 4, 0, Math.PI * 2)
-    ctx.fillStyle = '#4f46e5'
+    ctx.fillStyle = isDark() ? '#818cf8' : '#4f46e5'
     ctx.fill()
-    ctx.strokeStyle = '#fff'
+    ctx.strokeStyle = isDark() ? '#1a1b23' : '#fff'
     ctx.lineWidth = 1.5
     ctx.stroke()
   }
@@ -235,7 +237,7 @@ function drawPolygon(ctx: CanvasRenderingContext2D, polygon: Point[], scale: num
     const len = Math.sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2)
     const mid = toScreen({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, scale, offset)
     const isSelected = i === selectedEdge
-    ctx.fillStyle = isSelected ? '#059669' : '#4b5068'
+    ctx.fillStyle = isSelected ? '#34d399' : (isDark() ? '#a0a4b8' : '#4b5068')
     ctx.font = isSelected ? 'bold 11px monospace' : '10px monospace'
     ctx.fillText(`${Math.round(len)}`, mid.x + 5, mid.y - 6)
   }
@@ -335,7 +337,7 @@ function drawHatching(ctx: CanvasRenderingContext2D, corners: Point[], isRipCut:
     ctx.stroke()
     ctx.setLineDash([])
   } else {
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.25)'
+    ctx.strokeStyle = isDark() ? 'rgba(255, 255, 255, 0.25)' : 'rgba(0, 0, 0, 0.25)'
     ctx.lineWidth = 1
     ctx.beginPath()
     for (let d = minX + minY; d < maxX + maxY; d += 7) {
@@ -397,9 +399,9 @@ function drawCurrentPoints(ctx: CanvasRenderingContext2D, points: Point[], mouse
     const sp = toScreen(p, scale, offset)
     ctx.beginPath()
     ctx.arc(sp.x, sp.y, 5, 0, Math.PI * 2)
-    ctx.fillStyle = '#4f46e5'
+    ctx.fillStyle = isDark() ? '#818cf8' : '#4f46e5'
     ctx.fill()
-    ctx.strokeStyle = '#fff'
+    ctx.strokeStyle = isDark() ? '#1a1b23' : '#fff'
     ctx.lineWidth = 2
     ctx.stroke()
   }

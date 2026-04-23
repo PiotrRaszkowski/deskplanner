@@ -260,6 +260,11 @@ const translations: Record<string, { pl: string; en: string }> = {
     en: 'Ctrl+Z = undo • Ctrl+Shift+Z = redo • Esc = cancel drawing / close edit • Alt+drag = pan canvas • Scroll = zoom • Double-click = close polygon',
   },
 
+  // Theme
+  'theme.light': { pl: 'Jasny motyw', en: 'Light theme' },
+  'theme.dark': { pl: 'Ciemny motyw', en: 'Dark theme' },
+  'theme.system': { pl: 'Motyw systemowy', en: 'System theme' },
+
   // Footer
   'footer.disclaimer': {
     pl: 'Obliczenia mają charakter poglądowy i nie stanowią oferty handlowej.',
@@ -287,8 +292,8 @@ const translations: Record<string, { pl: string; en: string }> = {
   },
   'privacy.localstorage_title': { pl: 'localStorage', en: 'localStorage' },
   'privacy.localstorage_text': {
-    pl: 'Aplikacja zapisuje w localStorage: wybrany język (deckninja_lang), flagę onboardingu oraz zapisane projekty. Dane te nie opuszczają przeglądarki i można je usunąć czyszcząc dane witryny w ustawieniach przeglądarki.',
-    en: 'The application stores in localStorage: selected language (deckninja_lang), onboarding flag, and saved projects. This data does not leave the browser and can be removed by clearing site data in browser settings.',
+    pl: 'Aplikacja zapisuje w localStorage: wybrany język (deckninja_lang), motyw kolorystyczny (deckninja_theme), flagę onboardingu oraz zapisane projekty. Dane te nie opuszczają przeglądarki i można je usunąć czyszcząc dane witryny w ustawieniach przeglądarki.',
+    en: 'The application stores in localStorage: selected language (deckninja_lang), color theme (deckninja_theme), onboarding flag, and saved projects. This data does not leave the browser and can be removed by clearing site data in browser settings.',
   },
   'privacy.sharing_title': { pl: 'Udostępnianie linków', en: 'Link sharing' },
   'privacy.sharing_text': {
