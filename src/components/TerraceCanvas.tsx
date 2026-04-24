@@ -550,6 +550,20 @@ export default function TerraceCanvas({ polygon, placedBoards, upperJoists, lowe
               >
                 SVG
               </button>
+              <button
+                onClick={() => {
+                  const canvas = canvasRef.current
+                  if (!canvas) return
+                  const link = document.createElement('a')
+                  link.download = `taras-wymiary-${new Date().toISOString().slice(0, 10)}.png`
+                  link.href = canvas.toDataURL('image/png')
+                  link.click()
+                }}
+                className="px-2.5 py-1 rounded-md text-xs bg-accent/10 text-accent hover:bg-accent/20 transition-colors border border-accent/20"
+                title={t('canvas.export_dimensions_png')}
+              >
+                PNG
+              </button>
             </>
           )}
         </div>

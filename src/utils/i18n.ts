@@ -61,6 +61,7 @@ const translations: Record<string, { pl: string; en: string }> = {
   'canvas.layer.lower': { pl: 'Legary dolne', en: 'Lower joists' },
   'canvas.layer.dimensions': { pl: 'Wymiary', en: 'Dimensions' },
   'canvas.export_dimensions': { pl: 'Eksportuj wymiary SVG', en: 'Export dimensions SVG' },
+  'canvas.export_dimensions_png': { pl: 'Eksportuj wymiary PNG', en: 'Export dimensions PNG' },
   'canvas.position': { pl: 'Pozycja', en: 'Position' },
   'canvas.points': { pl: 'punktów', en: 'points' },
 
