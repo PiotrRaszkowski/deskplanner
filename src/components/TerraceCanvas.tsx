@@ -2,8 +2,10 @@ import { useRef, useEffect, useCallback, useState } from 'react'
 import type { Point, PlacedBoard, PlacedJoist, BoardSize } from '../types'
 import { renderCanvas } from '../utils/canvasRenderer'
 import { isPointNearPoint, distanceBetween } from '../utils/geometry'
+import { useLang } from '../utils/i18n'
 
-type VisibleLayer = 'boards' | 'upperJoists' | 'lowerJoists' | 'all'
+type VisibleLayer = 'boards' | 'upperJoists' | 'lowerJoists' | 'all' | 'dimensions'
+type DimensionUnit = 'mm' | 'cm' | 'm'
 
 interface TerraceCanvasProps {
   polygon: Point[]
@@ -37,6 +39,7 @@ function distanceToSegment(p: Point, a: Point, b: Point): number {
 }
 
 export default function TerraceCanvas({ polygon, placedBoards, upperJoists, lowerJoists, startPoint, boardSizes, onPolygonComplete, onPolygonUpdate, onStartPointSet, onClear }: TerraceCanvasProps) {
+  const { t } = useLang()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [currentPoints, setCurrentPoints] = useState<Point[]>([])
   const [mousePos, setMousePos] = useState<Point | null>(null)
@@ -51,6 +54,7 @@ export default function TerraceCanvas({ polygon, placedBoards, upperJoists, lowe
   const [edgeInputPos, setEdgeInputPos] = useState<Point>({ x: 0, y: 0 })
   const [settingStartPoint, setSettingStartPoint] = useState(false)
   const [visibleLayer, setVisibleLayer] = useState<VisibleLayer>('all')
+  const [dimensionUnit, setDimensionUnit] = useState<DimensionUnit>('mm')
   const [hoveredBoard, setHoveredBoard] = useState<number | null>(null)
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
   const lastFitPolygon = useRef<string>('')
@@ -167,8 +171,9 @@ export default function TerraceCanvas({ polygon, placedBoards, upperJoists, lowe
       boardSizes,
       visibleLayer,
       hoveredBoardIndex: hoveredBoard,
+      dimensionUnit,
     })
-  }, [polygon, placedBoards, upperJoists, lowerJoists, currentPoints, mousePos, scale, offset, drawingMode, gridSize, snapToGrid, selectedEdge, startPoint, boardSizes, visibleLayer, hoveredBoard])
+  }, [polygon, placedBoards, upperJoists, lowerJoists, currentPoints, mousePos, scale, offset, drawingMode, gridSize, snapToGrid, selectedEdge, startPoint, boardSizes, visibleLayer, hoveredBoard, dimensionUnit])
 
   const findClickedEdge = useCallback(
     (sx: number, sy: number): number | null => {
@@ -408,7 +413,7 @@ export default function TerraceCanvas({ polygon, placedBoards, upperJoists, lowe
   return (
     <div className="flex flex-col gap-2 h-full">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-text-primary">Kształt tarasu</h2>
+        <h2 className="text-sm font-semibold text-text-primary">{t('canvas.title')}</h2>
         <div className="flex gap-2">
           {!drawingMode && (
             <button
@@ -419,7 +424,7 @@ export default function TerraceCanvas({ polygon, placedBoards, upperJoists, lowe
                   : 'bg-surface-hover border-border-subtle text-text-secondary hover:bg-border-subtle'
               }`}
             >
-              {settingStartPoint ? 'Kliknij na róg tarasu...' : 'Róg startowy'}
+              {settingStartPoint ? t('canvas.start_click') : t('canvas.start_corner')}
             </button>
           )}
           {drawingMode && currentPoints.length > 0 && (
@@ -427,7 +432,7 @@ export default function TerraceCanvas({ polygon, placedBoards, upperJoists, lowe
               onClick={() => setCurrentPoints((prev) => prev.slice(0, -1))}
               className="px-3 py-1.5 text-xs bg-surface-hover hover:bg-border-subtle text-text-secondary rounded-lg transition-colors border border-border-subtle"
             >
-              Cofnij
+              {t('canvas.undo_point')}
             </button>
           )}
           <button
@@ -435,7 +440,7 @@ export default function TerraceCanvas({ polygon, placedBoards, upperJoists, lowe
             className={`px-3 py-1.5 text-xs rounded-lg transition-colors border ${
               snapToGrid ? 'bg-accent/10 border-accent/30 text-accent' : 'bg-surface-hover border-border-subtle text-text-muted'
             }`}
-            title="Siatka"
+            title={t('canvas.grid')}
           >
             ▦
           </button>
@@ -443,7 +448,7 @@ export default function TerraceCanvas({ polygon, placedBoards, upperJoists, lowe
             onClick={handleClear}
             className="px-3 py-1.5 text-xs bg-danger/10 hover:bg-danger/20 text-danger rounded-lg transition-colors border border-danger/20"
           >
-            Wyczyść
+            {t('canvas.clear')}
           </button>
         </div>
       </div>
@@ -457,7 +462,7 @@ export default function TerraceCanvas({ polygon, placedBoards, upperJoists, lowe
               onChange={(e) => setSnapToGrid(e.target.checked)}
               className="accent-accent w-3.5 h-3.5"
             />
-            Snap to grid
+            {t('canvas.snap')}
           </label>
           <label className="flex items-center gap-2 text-xs text-text-secondary cursor-pointer">
             <input
@@ -466,7 +471,7 @@ export default function TerraceCanvas({ polygon, placedBoards, upperJoists, lowe
               onChange={(e) => setOrthoMode(e.target.checked)}
               className="accent-accent w-3.5 h-3.5"
             />
-            Kąty proste (90°)
+            {t('canvas.ortho')}
           </label>
           <select
             value={gridSize}
@@ -475,7 +480,7 @@ export default function TerraceCanvas({ polygon, placedBoards, upperJoists, lowe
           >
             {GRID_SIZES.map((s) => (
               <option key={s} value={s}>
-                Siatka {s} mm
+                {t('canvas.grid_mm').replace('{0}', String(s))}
               </option>
             ))}
           </select>
@@ -484,23 +489,31 @@ export default function TerraceCanvas({ polygon, placedBoards, upperJoists, lowe
 
       {drawingMode && (
         <p className="text-xs text-text-muted">
-          Klikaj aby dodać punkty wielokąta. Zamknij klikając na pierwszy punkt lub double-click.
-          {orthoMode && ' Tryb kątów prostych aktywny.'}
-          {' '}Alt+drag = przesuń. Scroll = zoom. Esc = anuluj. Ctrl+Z = cofnij.
+          {t('canvas.draw_hint')}
+          {orthoMode && ` ${t('canvas.ortho_active')}`}
+          {` ${t('canvas.controls')}`}
         </p>
       )}
 
       {!drawingMode && !settingStartPoint && selectedEdge === null && (
         <p className="text-xs text-text-muted">
-          Kliknij na krawędź aby edytować długość. Wybierz róg startowy układania desek.
+          {t('canvas.edit_hint')}
         </p>
       )}
 
-      {!drawingMode && (placedBoards.length > 0 || upperJoists.length > 0 || lowerJoists.length > 0) && (
-        <div className="flex items-center gap-1 text-xs">
-          <span className="text-text-muted mr-1">Warstwa:</span>
-          {(['all', 'boards', 'upperJoists', 'lowerJoists'] as VisibleLayer[]).map((layer) => {
-            const labels: Record<VisibleLayer, string> = { all: 'Wszystko', boards: 'Deski', upperJoists: 'Legary górne', lowerJoists: 'Legary dolne' }
+      {!drawingMode && (
+        <div className="flex items-center gap-1 text-xs flex-wrap">
+          <span className="text-text-muted mr-1">{t('canvas.layer')}</span>
+          {(['all', 'boards', 'upperJoists', 'lowerJoists', 'dimensions'] as VisibleLayer[]).map((layer) => {
+            const labelKeys: Record<VisibleLayer, string> = {
+              all: 'canvas.layer.all',
+              boards: 'canvas.layer.boards',
+              upperJoists: 'canvas.layer.upper',
+              lowerJoists: 'canvas.layer.lower',
+              dimensions: 'canvas.layer.dimensions',
+            }
+            const showLayer = layer !== 'dimensions' ? (placedBoards.length > 0 || upperJoists.length > 0 || lowerJoists.length > 0) : polygon.length >= 3
+            if (!showLayer) return null
             return (
               <button
                 key={layer}
@@ -511,10 +524,21 @@ export default function TerraceCanvas({ polygon, placedBoards, upperJoists, lowe
                     : 'bg-surface-hover text-text-secondary hover:bg-border-subtle'
                 }`}
               >
-                {labels[layer]}
+                {t(labelKeys[layer])}
               </button>
             )
           })}
+          {visibleLayer === 'dimensions' && (
+            <select
+              value={dimensionUnit}
+              onChange={(e) => setDimensionUnit(e.target.value as DimensionUnit)}
+              className="ml-2 text-xs bg-surface-elevated border border-border-subtle rounded-lg px-2 py-1 text-text-secondary"
+            >
+              <option value="mm">mm</option>
+              <option value="cm">cm</option>
+              <option value="m">m</option>
+            </select>
+          )}
         </div>
       )}
 

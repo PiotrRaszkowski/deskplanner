@@ -29,41 +29,50 @@ interface RenderOptions {
   selectedEdge: number | null
   startPoint: Point | null
   boardSizes: BoardSize[]
-  visibleLayer: 'boards' | 'upperJoists' | 'lowerJoists' | 'all'
+  visibleLayer: 'boards' | 'upperJoists' | 'lowerJoists' | 'all' | 'dimensions'
   hoveredBoardIndex: number | null
+  dimensionUnit: 'mm' | 'cm' | 'm'
 }
 
 export function renderCanvas(ctx: CanvasRenderingContext2D, options: RenderOptions) {
-  const { polygon, placedBoards, upperJoists, lowerJoists, currentPoints, mousePos, scale, offset, canvasWidth, canvasHeight, drawingMode, gridSize, snapToGrid, selectedEdge, startPoint, boardSizes, visibleLayer, hoveredBoardIndex } = options
+  const { polygon, placedBoards, upperJoists, lowerJoists, currentPoints, mousePos, scale, offset, canvasWidth, canvasHeight, drawingMode, gridSize, snapToGrid, selectedEdge, startPoint, boardSizes, visibleLayer, hoveredBoardIndex, dimensionUnit } = options
 
   ctx.clearRect(0, 0, canvasWidth, canvasHeight)
 
-  if (snapToGrid) {
+  const isDimensions = visibleLayer === 'dimensions'
+
+  if (snapToGrid && !isDimensions) {
     drawGrid(ctx, scale, offset, canvasWidth, canvasHeight, gridSize)
   }
 
-  const colorMap = buildColorMap(boardSizes)
-  const showAll = visibleLayer === 'all'
+  if (!isDimensions) {
+    const colorMap = buildColorMap(boardSizes)
+    const showAll = visibleLayer === 'all'
 
-  if ((visibleLayer === 'lowerJoists' || showAll) && lowerJoists.length > 0) {
-    drawJoists(ctx, lowerJoists, scale, offset, '#8b6c3f', showAll ? 0.35 : 0.8)
-  }
+    if ((visibleLayer === 'lowerJoists' || showAll) && lowerJoists.length > 0) {
+      drawJoists(ctx, lowerJoists, scale, offset, '#8b6c3f', showAll ? 0.35 : 0.8)
+    }
 
-  if ((visibleLayer === 'upperJoists' || showAll) && upperJoists.length > 0) {
-    drawJoists(ctx, upperJoists, scale, offset, '#4a7a5e', showAll ? 0.45 : 0.8)
-  }
+    if ((visibleLayer === 'upperJoists' || showAll) && upperJoists.length > 0) {
+      drawJoists(ctx, upperJoists, scale, offset, '#4a7a5e', showAll ? 0.45 : 0.8)
+    }
 
-  if ((visibleLayer === 'boards' || showAll) && placedBoards.length > 0) {
-    if (showAll) ctx.globalAlpha = 0.7
-    drawBoards(ctx, placedBoards, scale, offset, colorMap, hoveredBoardIndex)
-    ctx.globalAlpha = 1
+    if ((visibleLayer === 'boards' || showAll) && placedBoards.length > 0) {
+      if (showAll) ctx.globalAlpha = 0.7
+      drawBoards(ctx, placedBoards, scale, offset, colorMap, hoveredBoardIndex)
+      ctx.globalAlpha = 1
+    }
   }
 
   if (polygon.length > 0) {
-    drawPolygon(ctx, polygon, scale, offset, selectedEdge)
+    drawPolygon(ctx, polygon, scale, offset, isDimensions ? null : selectedEdge)
   }
 
-  if (startPoint) {
+  if (isDimensions && polygon.length >= 3) {
+    drawDimensions(ctx, polygon, scale, offset, dimensionUnit)
+  }
+
+  if (!isDimensions && startPoint) {
     drawStartPoint(ctx, startPoint, scale, offset)
   }
 
@@ -416,6 +425,153 @@ function drawCurrentPoints(ctx: CanvasRenderingContext2D, points: Point[], mouse
     ctx.stroke()
     ctx.setLineDash([])
   }
+}
+
+function formatDimension(mm: number, unit: 'mm' | 'cm' | 'm'): string {
+  if (unit === 'cm') return `${(mm / 10).toFixed(1)} cm`
+  if (unit === 'm') return `${(mm / 1000).toFixed(3)} m`
+  return `${Math.round(mm)} mm`
+}
+
+function polygonSignedArea(polygon: Point[]): number {
+  let area = 0
+  for (let i = 0; i < polygon.length; i++) {
+    const j = (i + 1) % polygon.length
+    area += polygon[i].x * polygon[j].y
+    area -= polygon[j].x * polygon[i].y
+  }
+  return area / 2
+}
+
+function drawDimensions(ctx: CanvasRenderingContext2D, polygon: Point[], scale: number, offset: Point, unit: 'mm' | 'cm' | 'm') {
+  const n = polygon.length
+  if (n < 3) return
+
+  const dark = isDark()
+  const dimColor = dark ? '#818cf8' : '#4f46e5'
+  const textColor = dark ? '#e8e9ed' : '#1a1d2e'
+  const extColor = dark ? '#6b6f82' : '#8b90a3'
+
+  const signed = polygonSignedArea(polygon)
+  const ccw = signed > 0
+
+  const DIM_OFFSET = 28
+  const ARROW_SIZE = 6
+  const TICK_SIZE = 4
+
+  for (let i = 0; i < n; i++) {
+    const a = polygon[i]
+    const b = polygon[(i + 1) % n]
+
+    const dx = b.x - a.x
+    const dy = b.y - a.y
+    const edgeLen = Math.sqrt(dx * dx + dy * dy)
+    if (edgeLen < 1) continue
+
+    const ux = dx / edgeLen
+    const uy = dy / edgeLen
+
+    let nx: number, ny: number
+    if (ccw) {
+      nx = -uy; ny = ux
+    } else {
+      nx = uy; ny = -ux
+    }
+
+    const sa = toScreen(a, scale, offset)
+    const sb = toScreen(b, scale, offset)
+
+    const extAx = sa.x + nx * (DIM_OFFSET + TICK_SIZE)
+    const extAy = sa.y + ny * (DIM_OFFSET + TICK_SIZE)
+    const extBx = sb.x + nx * (DIM_OFFSET + TICK_SIZE)
+    const extBy = sb.y + ny * (DIM_OFFSET + TICK_SIZE)
+
+    ctx.beginPath()
+    ctx.moveTo(sa.x + nx * 6, sa.y + ny * 6)
+    ctx.lineTo(extAx, extAy)
+    ctx.moveTo(sb.x + nx * 6, sb.y + ny * 6)
+    ctx.lineTo(extBx, extBy)
+    ctx.strokeStyle = extColor
+    ctx.lineWidth = 0.8
+    ctx.stroke()
+
+    const dimAx = sa.x + nx * DIM_OFFSET
+    const dimAy = sa.y + ny * DIM_OFFSET
+    const dimBx = sb.x + nx * DIM_OFFSET
+    const dimBy = sb.y + ny * DIM_OFFSET
+
+    ctx.beginPath()
+    ctx.moveTo(dimAx, dimAy)
+    ctx.lineTo(dimBx, dimBy)
+    ctx.strokeStyle = dimColor
+    ctx.lineWidth = 1.2
+    ctx.stroke()
+
+    const screenLen = Math.sqrt((dimBx - dimAx) ** 2 + (dimBy - dimAy) ** 2)
+    const sux = (dimBx - dimAx) / screenLen
+    const suy = (dimBy - dimAy) / screenLen
+
+    ctx.fillStyle = dimColor
+    ctx.beginPath()
+    ctx.moveTo(dimAx, dimAy)
+    ctx.lineTo(dimAx + sux * ARROW_SIZE - suy * ARROW_SIZE * 0.35, dimAy + suy * ARROW_SIZE + sux * ARROW_SIZE * 0.35)
+    ctx.lineTo(dimAx + sux * ARROW_SIZE + suy * ARROW_SIZE * 0.35, dimAy + suy * ARROW_SIZE - sux * ARROW_SIZE * 0.35)
+    ctx.closePath()
+    ctx.fill()
+
+    ctx.beginPath()
+    ctx.moveTo(dimBx, dimBy)
+    ctx.lineTo(dimBx - sux * ARROW_SIZE - suy * ARROW_SIZE * 0.35, dimBy - suy * ARROW_SIZE + sux * ARROW_SIZE * 0.35)
+    ctx.lineTo(dimBx - sux * ARROW_SIZE + suy * ARROW_SIZE * 0.35, dimBy - suy * ARROW_SIZE - sux * ARROW_SIZE * 0.35)
+    ctx.closePath()
+    ctx.fill()
+
+    const midX = (dimAx + dimBx) / 2
+    const midY = (dimAy + dimBy) / 2
+    const label = formatDimension(edgeLen, unit)
+
+    ctx.save()
+    ctx.translate(midX, midY)
+
+    let angle = Math.atan2(dimBy - dimAy, dimBx - dimAx)
+    if (angle > Math.PI / 2) angle -= Math.PI
+    if (angle < -Math.PI / 2) angle += Math.PI
+    ctx.rotate(angle)
+
+    ctx.font = 'bold 11px monospace'
+    const textWidth = ctx.measureText(label).width
+    const pad = 4
+
+    ctx.fillStyle = dark ? '#121318' : '#fafbfc'
+    ctx.fillRect(-textWidth / 2 - pad, -8, textWidth + pad * 2, 14)
+
+    ctx.fillStyle = textColor
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(label, 0, 0)
+
+    ctx.restore()
+  }
+
+  const areaM2 = Math.abs(polygonSignedArea(polygon)) / 1e6
+  const areaLabel = `${areaM2.toFixed(2)} m\u00B2`
+
+  const cx = polygon.reduce((s, p) => s + p.x, 0) / n
+  const cy = polygon.reduce((s, p) => s + p.y, 0) / n
+  const center = toScreen({ x: cx, y: cy }, scale, offset)
+
+  ctx.font = 'bold 13px sans-serif'
+  const areaWidth = ctx.measureText(areaLabel).width
+
+  ctx.fillStyle = dark ? 'rgba(129, 140, 248, 0.12)' : 'rgba(79, 70, 229, 0.08)'
+  ctx.beginPath()
+  ctx.roundRect(center.x - areaWidth / 2 - 8, center.y - 10, areaWidth + 16, 22, 6)
+  ctx.fill()
+
+  ctx.fillStyle = dimColor
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(areaLabel, center.x, center.y)
 }
 
 function drawSnapGuides(ctx: CanvasRenderingContext2D, points: Point[], mousePos: Point, scale: number, offset: Point) {

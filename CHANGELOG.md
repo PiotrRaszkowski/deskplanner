@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.0] - 2026-04-24
+
+### Features
+- Dimensions layer: technical dimension lines with extension lines, arrows, and measurements for each polygon edge
+- Unit selector: switch between mm, cm, m in dimensions view
+- Polygon area (m²) displayed at center in dimensions mode
+- Canvas toolbar strings migrated to i18n (PL/EN)
+
 ## [1.3.0] - 2026-04-23
 
 ### Features

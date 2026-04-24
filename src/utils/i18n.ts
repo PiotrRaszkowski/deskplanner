@@ -59,6 +59,7 @@ const translations: Record<string, { pl: string; en: string }> = {
   'canvas.layer.boards': { pl: 'Deski', en: 'Boards' },
   'canvas.layer.upper': { pl: 'Legary górne', en: 'Upper joists' },
   'canvas.layer.lower': { pl: 'Legary dolne', en: 'Lower joists' },
+  'canvas.layer.dimensions': { pl: 'Wymiary', en: 'Dimensions' },
   'canvas.position': { pl: 'Pozycja', en: 'Position' },
   'canvas.points': { pl: 'punktów', en: 'points' },
 
