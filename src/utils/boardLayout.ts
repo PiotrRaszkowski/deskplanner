@@ -174,82 +174,99 @@ function fillRow(
   const plan = optimalPlan(segLen, boards, gap)
 
   if (mode === 'reuse-aggressive') {
-    const sorted = [...boards].sort((a, b) => b.length - a.length)
     const minLen = pool.getMinLength()
-    let cursor = 0
-    let mergedShort = false
-    while (cursor < segLen - 1) {
-      const remaining = segLen - cursor
 
-      if (remaining < minLen && pieces.length > 0 && !mergedShort) {
-        mergedShort = true
-        const prev = pieces.pop()!
-        cursor -= prev.len + gap
-        const combined = segLen - cursor
-        if (prev.fromOffcut) {
-          pool.add(prev.board.id, prev.origLen)
-        } else if (prev.cut) {
-          const returnLen = prev.origLen - prev.len
-          if (returnLen >= pool.getMinLength()) pool.add(prev.board.id, returnLen)
-        }
-        const board = sorted[0]
-        const useLen = Math.min(board.length, combined)
-        if (useLen < board.length) pool.add(board.id, board.length - useLen)
-        pieces.push({ len: useLen, board, cut: useLen < board.length, fromOffcut: false, origLen: board.length })
-        cursor += useLen + gap
-        if (combined <= board.length) break
-        continue
-      }
+    const sorted = [...boards].sort((a, b) => b.length - a.length)
 
-      if (remaining < minLen) {
-        if (pieces.length > 0) {
-          const last = pieces[pieces.length - 1]
-          if (last.len + remaining <= last.origLen) {
-            last.len += remaining
-            last.cut = true
-            break
+    const fillWithPlan = (planLen: number, planPieces: typeof pieces) => {
+      const p = optimalPlan(planLen, boards, gap)
+
+      if (p.length > 0 && p[p.length - 1].len < minLen && p[p.length - 1].cut) {
+        const tail = p[p.length - 1]
+        if (p.length >= 2) {
+          const prev = p[p.length - 2]
+          const combinedLen = prev.len + gap + tail.len
+          const bestBoard = sorted.find(b => b.length >= combinedLen) || sorted[0]
+          if (bestBoard.length >= combinedLen) {
+            p.splice(p.length - 2, 2)
+            p.push({ board: bestBoard, len: combinedLen, cut: combinedLen < bestBoard.length })
+          } else {
+            const half1 = Math.ceil((combinedLen - gap) / 2)
+            const half2 = combinedLen - gap - half1
+            const b1 = sorted.find(b => b.length >= half1) || sorted[0]
+            const b2 = sorted.find(b => b.length >= half2) || sorted[0]
+            if (half1 >= minLen && half2 >= minLen && b1.length >= half1 && b2.length >= half2) {
+              p.splice(p.length - 2, 2)
+              p.push({ board: b1, len: half1, cut: half1 < b1.length })
+              p.push({ board: b2, len: half2, cut: half2 < b2.length })
+            }
           }
         }
-        const board = sorted[0]
-        const useLen = Math.min(board.length, remaining)
-        if (useLen < board.length) pool.add(board.id, board.length - useLen)
-        pieces.push({ len: useLen, board, cut: true, fromOffcut: false, origLen: board.length })
-        break
       }
 
-      const exactPool = pool.findBestFit(remaining)
-      if (exactPool && Math.min(exactPool.length, remaining) >= minLen) {
-        const board = byId.get(exactPool.id) || sorted[0]
-        pool.take(exactPool.id, exactPool.length)
-        const useLen = Math.min(exactPool.length, remaining)
-        if (useLen < exactPool.length) pool.add(exactPool.id, exactPool.length - useLen)
-        pieces.push({ len: useLen, board, cut: useLen < exactPool.length, fromOffcut: true, origLen: exactPool.length })
-        cursor += useLen + gap
-        continue
+      for (const step of p) {
+        if (step.cut) {
+          const offcut = step.board.length - step.len
+          if (offcut >= minLen) pool.add(step.board.id, offcut)
+        }
+        planPieces.push({ len: step.len, board: step.board, cut: step.cut, fromOffcut: false, origLen: step.board.length })
+      }
+    }
+
+    const hasShortTail = (p: typeof pieces) => p.length > 0 && p[p.length - 1].len < minLen
+
+    const tryWithOffcut = (): boolean => {
+      const offcut = pool.findBestFit(minLen)
+      if (!offcut || offcut.length < minLen) return false
+
+      pool.take(offcut.id, offcut.length)
+      const board = byId.get(offcut.id) || boards[0]
+      const useLen = Math.min(offcut.length, segLen)
+      const leftover = offcut.length - useLen
+      if (leftover >= minLen) pool.add(offcut.id, leftover)
+
+      const attempt: typeof pieces = []
+      attempt.push({ len: useLen, board, cut: useLen < offcut.length, fromOffcut: true, origLen: offcut.length })
+
+      const usedWithGap = useLen + gap
+      const rest = segLen - usedWithGap
+      if (rest > 0) {
+        fillWithPlan(rest, attempt)
       }
 
-      const largest = pool.findLargest()
-      if (largest && largest.length >= minLen && Math.min(largest.length, remaining) >= minLen) {
-        const board = byId.get(largest.id) || sorted[0]
-        pool.take(largest.id, largest.length)
-        const useLen = Math.min(largest.length, remaining)
-        pieces.push({ len: useLen, board, cut: true, fromOffcut: true, origLen: largest.length })
-        cursor += useLen + gap
-        continue
+      if (!hasShortTail(attempt)) {
+        pieces.push(...attempt)
+        return true
       }
 
-      const fresh = sorted.find(b => b.length <= remaining)
-      if (fresh) {
-        pieces.push({ len: fresh.length, board: fresh, cut: false, fromOffcut: false, origLen: fresh.length })
-        cursor += fresh.length + gap
-        continue
+      pool.add(offcut.id, offcut.length)
+      for (const p of attempt) {
+        if (!p.fromOffcut && p.cut) {
+          const off = p.origLen - p.len
+          if (off >= minLen) pool.take(p.board.id, off)
+        }
       }
+      return false
+    }
 
-      const board = sorted[0]
-      const useLen = Math.min(board.length, remaining)
-      if (useLen < board.length) pool.add(board.id, board.length - useLen)
-      pieces.push({ len: useLen, board, cut: useLen < board.length, fromOffcut: false, origLen: board.length })
-      cursor += useLen + gap
+    if (!tryWithOffcut()) {
+      fillWithPlan(segLen, pieces)
+
+      if (hasShortTail(pieces) && pieces.length >= 2) {
+        const last = pieces[pieces.length - 1]
+        const prev = pieces[pieces.length - 2]
+        if (prev.len + gap + last.len <= prev.origLen) {
+          if (prev.cut) {
+            const oldOff = prev.origLen - prev.len
+            if (oldOff >= minLen) pool.take(prev.board.id, oldOff)
+          }
+          prev.len += gap + last.len
+          prev.cut = true
+          const newOff = prev.origLen - prev.len
+          if (newOff >= minLen) pool.add(prev.board.id, newOff)
+          pieces.pop()
+        }
+      }
     }
   } else {
     let filled = 0

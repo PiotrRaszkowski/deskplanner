@@ -330,6 +330,23 @@ describe('calculateLayout', () => {
       expect(shortOffcuts.length, `Found ${shortOffcuts.length} short offcut pieces: ${shortOffcuts.map(b => Math.round(b.actualLength)).join(', ')}`).toBe(0)
     })
 
+    it('reuse-aggressive should split short tail into two halves when segment slightly exceeds board length', () => {
+      const rect: Point[] = [
+        { x: 0, y: 0 },
+        { x: 4220, y: 0 },
+        { x: 4220, y: 2000 },
+        { x: 0, y: 2000 },
+      ]
+      const singleBoard: BoardSize[] = [
+        { id: '140x4000', width: 140, length: 4000, label: '140 × 4000 mm' },
+      ]
+      const settings: OffcutSettings = { mode: 'reuse-aggressive', minLength: 500 }
+      const result = calculateLayout(rect, singleBoard, GAPS, 0, null, settings)
+
+      const shortPieces = result.placedBoards.filter(b => !b.ripCut && b.actualLength < 500)
+      expect(shortPieces.length, `Short pieces: ${shortPieces.map(b => Math.round(b.actualLength))}`).toBe(0)
+    })
+
     it('reuse-aggressive should not produce overlapping boards', () => {
       const wideRect: Point[] = [
         { x: 0, y: 0 },
