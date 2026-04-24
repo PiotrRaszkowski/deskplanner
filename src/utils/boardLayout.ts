@@ -191,7 +191,7 @@ function fillRow(
       }
 
       const largest = pool.findLargest()
-      if (largest && largest.length >= pool.getMinLength()) {
+      if (largest && largest.length >= pool.getMinLength() && Math.min(largest.length, remaining) >= pool.getMinLength()) {
         const board = byId.get(largest.id) || sorted[0]
         pool.take(largest.id, largest.length)
         const useLen = Math.min(largest.length, remaining)

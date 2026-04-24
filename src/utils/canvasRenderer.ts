@@ -462,16 +462,18 @@ function drawDimensions(ctx: CanvasRenderingContext2D, polygon: Point[], scale: 
   if (n < 3) return
 
   const dark = isDark()
-  const dimColor = dark ? '#818cf8' : '#4f46e5'
+  const dimColor = dark ? '#a5b4fc' : '#4f46e5'
   const textColor = dark ? '#e8e9ed' : '#1a1d2e'
   const extColor = dark ? '#6b6f82' : '#8b90a3'
 
   const signed = polygonSignedArea(polygon)
   const ccw = signed > 0
 
-  const DIM_OFFSET = 28
-  const ARROW_SIZE = 6
-  const TICK_SIZE = 4
+  const DIM_OFFSET = 24
+  const ARROW_SIZE = 7
+  const TICK_EXT = 5
+
+  const worldOffset = DIM_OFFSET / scale
 
   for (let i = 0; i < n; i++) {
     const a = polygon[i]
@@ -492,28 +494,32 @@ function drawDimensions(ctx: CanvasRenderingContext2D, polygon: Point[], scale: 
       nx = uy; ny = -ux
     }
 
-    const midWx = (a.x + b.x) / 2
-    const midWy = (a.y + b.y) / 2
-    const testDist = 50
-    if (isPointInsidePolygon(midWx + nx * testDist, midWy + ny * testDist, polygon)) {
+    const testDist = worldOffset * 1.5
+    const testPoints = [
+      { x: (a.x + b.x) / 2 + nx * testDist, y: (a.y + b.y) / 2 + ny * testDist },
+      { x: a.x + ux * edgeLen * 0.25 + nx * testDist, y: a.y + uy * edgeLen * 0.25 + ny * testDist },
+      { x: a.x + ux * edgeLen * 0.75 + nx * testDist, y: a.y + uy * edgeLen * 0.75 + ny * testDist },
+    ]
+    const insideCount = testPoints.filter(p => isPointInsidePolygon(p.x, p.y, polygon)).length
+    if (insideCount >= 2) {
       nx = -nx; ny = -ny
     }
 
     const sa = toScreen(a, scale, offset)
     const sb = toScreen(b, scale, offset)
 
-    const extAx = sa.x + nx * (DIM_OFFSET + TICK_SIZE)
-    const extAy = sa.y + ny * (DIM_OFFSET + TICK_SIZE)
-    const extBx = sb.x + nx * (DIM_OFFSET + TICK_SIZE)
-    const extBy = sb.y + ny * (DIM_OFFSET + TICK_SIZE)
+    const extAx = sa.x + nx * (DIM_OFFSET + TICK_EXT)
+    const extAy = sa.y + ny * (DIM_OFFSET + TICK_EXT)
+    const extBx = sb.x + nx * (DIM_OFFSET + TICK_EXT)
+    const extBy = sb.y + ny * (DIM_OFFSET + TICK_EXT)
 
     ctx.beginPath()
-    ctx.moveTo(sa.x + nx * 6, sa.y + ny * 6)
+    ctx.moveTo(sa.x + nx * 5, sa.y + ny * 5)
     ctx.lineTo(extAx, extAy)
-    ctx.moveTo(sb.x + nx * 6, sb.y + ny * 6)
+    ctx.moveTo(sb.x + nx * 5, sb.y + ny * 5)
     ctx.lineTo(extBx, extBy)
     ctx.strokeStyle = extColor
-    ctx.lineWidth = 0.8
+    ctx.lineWidth = 1
     ctx.stroke()
 
     const dimAx = sa.x + nx * DIM_OFFSET
@@ -525,25 +531,26 @@ function drawDimensions(ctx: CanvasRenderingContext2D, polygon: Point[], scale: 
     ctx.moveTo(dimAx, dimAy)
     ctx.lineTo(dimBx, dimBy)
     ctx.strokeStyle = dimColor
-    ctx.lineWidth = 1.2
+    ctx.lineWidth = 1.5
     ctx.stroke()
 
     const screenLen = Math.sqrt((dimBx - dimAx) ** 2 + (dimBy - dimAy) ** 2)
+    if (screenLen < 1) continue
     const sux = (dimBx - dimAx) / screenLen
     const suy = (dimBy - dimAy) / screenLen
 
     ctx.fillStyle = dimColor
     ctx.beginPath()
     ctx.moveTo(dimAx, dimAy)
-    ctx.lineTo(dimAx + sux * ARROW_SIZE - suy * ARROW_SIZE * 0.35, dimAy + suy * ARROW_SIZE + sux * ARROW_SIZE * 0.35)
-    ctx.lineTo(dimAx + sux * ARROW_SIZE + suy * ARROW_SIZE * 0.35, dimAy + suy * ARROW_SIZE - sux * ARROW_SIZE * 0.35)
+    ctx.lineTo(dimAx + sux * ARROW_SIZE - suy * ARROW_SIZE * 0.4, dimAy + suy * ARROW_SIZE + sux * ARROW_SIZE * 0.4)
+    ctx.lineTo(dimAx + sux * ARROW_SIZE + suy * ARROW_SIZE * 0.4, dimAy + suy * ARROW_SIZE - sux * ARROW_SIZE * 0.4)
     ctx.closePath()
     ctx.fill()
 
     ctx.beginPath()
     ctx.moveTo(dimBx, dimBy)
-    ctx.lineTo(dimBx - sux * ARROW_SIZE - suy * ARROW_SIZE * 0.35, dimBy - suy * ARROW_SIZE + sux * ARROW_SIZE * 0.35)
-    ctx.lineTo(dimBx - sux * ARROW_SIZE + suy * ARROW_SIZE * 0.35, dimBy - suy * ARROW_SIZE - sux * ARROW_SIZE * 0.35)
+    ctx.lineTo(dimBx - sux * ARROW_SIZE - suy * ARROW_SIZE * 0.4, dimBy - suy * ARROW_SIZE + sux * ARROW_SIZE * 0.4)
+    ctx.lineTo(dimBx - sux * ARROW_SIZE + suy * ARROW_SIZE * 0.4, dimBy - suy * ARROW_SIZE - sux * ARROW_SIZE * 0.4)
     ctx.closePath()
     ctx.fill()
 
@@ -559,12 +566,15 @@ function drawDimensions(ctx: CanvasRenderingContext2D, polygon: Point[], scale: 
     if (angle < -Math.PI / 2) angle += Math.PI
     ctx.rotate(angle)
 
-    ctx.font = 'bold 11px monospace'
+    ctx.font = 'bold 12px monospace'
     const textWidth = ctx.measureText(label).width
-    const pad = 4
+    const pad = 5
 
     ctx.fillStyle = dark ? '#121318' : '#fafbfc'
-    ctx.fillRect(-textWidth / 2 - pad, -8, textWidth + pad * 2, 14)
+    ctx.fillRect(-textWidth / 2 - pad, -9, textWidth + pad * 2, 16)
+    ctx.strokeStyle = dimColor
+    ctx.lineWidth = 0.5
+    ctx.strokeRect(-textWidth / 2 - pad, -9, textWidth + pad * 2, 16)
 
     ctx.fillStyle = textColor
     ctx.textAlign = 'center'
