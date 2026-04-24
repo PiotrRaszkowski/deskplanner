@@ -202,6 +202,14 @@ function fillRow(
       }
 
       if (remaining < minLen) {
+        if (pieces.length > 0) {
+          const last = pieces[pieces.length - 1]
+          if (last.len + remaining <= last.origLen) {
+            last.len += remaining
+            last.cut = true
+            break
+          }
+        }
         const board = sorted[0]
         const useLen = Math.min(board.length, remaining)
         if (useLen < board.length) pool.add(board.id, board.length - useLen)
