@@ -6,7 +6,12 @@
 - Dimensions layer: technical dimension lines with extension lines, arrows, and measurements for each polygon edge
 - Unit selector: switch between mm, cm, m in dimensions view
 - Polygon area (m²) displayed at center in dimensions mode
+- Export dimensions as SVG (button visible in dimensions mode)
 - Canvas toolbar strings migrated to i18n (PL/EN)
+
+### Fixed
+- Dimension lines on concave polygons (L-shapes): normals now always point outward
+- Duplicate labels removed: old edge labels hidden in dimensions mode
 
 ## [1.3.0] - 2026-04-23
 

@@ -65,7 +65,7 @@ export function renderCanvas(ctx: CanvasRenderingContext2D, options: RenderOptio
   }
 
   if (polygon.length > 0) {
-    drawPolygon(ctx, polygon, scale, offset, isDimensions ? null : selectedEdge)
+    drawPolygon(ctx, polygon, scale, offset, isDimensions ? null : selectedEdge, !isDimensions)
   }
 
   if (isDimensions && polygon.length >= 3) {
@@ -198,7 +198,7 @@ function drawGrid(ctx: CanvasRenderingContext2D, scale: number, offset: Point, w
   }
 }
 
-function drawPolygon(ctx: CanvasRenderingContext2D, polygon: Point[], scale: number, offset: Point, selectedEdge: number | null) {
+function drawPolygon(ctx: CanvasRenderingContext2D, polygon: Point[], scale: number, offset: Point, selectedEdge: number | null, showLabels = true) {
   if (polygon.length < 2) return
 
   ctx.beginPath()
@@ -240,15 +240,17 @@ function drawPolygon(ctx: CanvasRenderingContext2D, polygon: Point[], scale: num
     ctx.stroke()
   }
 
-  for (let i = 0; i < polygon.length; i++) {
-    const a = polygon[i]
-    const b = polygon[(i + 1) % polygon.length]
-    const len = Math.sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2)
-    const mid = toScreen({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, scale, offset)
-    const isSelected = i === selectedEdge
-    ctx.fillStyle = isSelected ? '#34d399' : (isDark() ? '#a0a4b8' : '#4b5068')
-    ctx.font = isSelected ? 'bold 11px monospace' : '10px monospace'
-    ctx.fillText(`${Math.round(len)}`, mid.x + 5, mid.y - 6)
+  if (showLabels) {
+    for (let i = 0; i < polygon.length; i++) {
+      const a = polygon[i]
+      const b = polygon[(i + 1) % polygon.length]
+      const len = Math.sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2)
+      const mid = toScreen({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, scale, offset)
+      const isSelected = i === selectedEdge
+      ctx.fillStyle = isSelected ? '#34d399' : (isDark() ? '#a0a4b8' : '#4b5068')
+      ctx.font = isSelected ? 'bold 11px monospace' : '10px monospace'
+      ctx.fillText(`${Math.round(len)}`, mid.x + 5, mid.y - 6)
+    }
   }
 }
 
@@ -443,6 +445,18 @@ function polygonSignedArea(polygon: Point[]): number {
   return area / 2
 }
 
+function isPointInsidePolygon(px: number, py: number, polygon: Point[]): boolean {
+  let inside = false
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i].x, yi = polygon[i].y
+    const xj = polygon[j].x, yj = polygon[j].y
+    if ((yi > py) !== (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi) + xi) {
+      inside = !inside
+    }
+  }
+  return inside
+}
+
 function drawDimensions(ctx: CanvasRenderingContext2D, polygon: Point[], scale: number, offset: Point, unit: 'mm' | 'cm' | 'm') {
   const n = polygon.length
   if (n < 3) return
@@ -476,6 +490,13 @@ function drawDimensions(ctx: CanvasRenderingContext2D, polygon: Point[], scale: 
       nx = -uy; ny = ux
     } else {
       nx = uy; ny = -ux
+    }
+
+    const midWx = (a.x + b.x) / 2
+    const midWy = (a.y + b.y) / 2
+    const testDist = 50
+    if (isPointInsidePolygon(midWx + nx * testDist, midWy + ny * testDist, polygon)) {
+      nx = -nx; ny = -ny
     }
 
     const sa = toScreen(a, scale, offset)

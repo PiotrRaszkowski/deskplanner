@@ -3,6 +3,7 @@ import type { Point, PlacedBoard, PlacedJoist, BoardSize } from '../types'
 import { renderCanvas } from '../utils/canvasRenderer'
 import { isPointNearPoint, distanceBetween } from '../utils/geometry'
 import { useLang } from '../utils/i18n'
+import { exportDimensionsSvg, downloadSvg } from '../utils/exportSvg'
 
 type VisibleLayer = 'boards' | 'upperJoists' | 'lowerJoists' | 'all' | 'dimensions'
 type DimensionUnit = 'mm' | 'cm' | 'm'
@@ -529,15 +530,27 @@ export default function TerraceCanvas({ polygon, placedBoards, upperJoists, lowe
             )
           })}
           {visibleLayer === 'dimensions' && (
-            <select
-              value={dimensionUnit}
-              onChange={(e) => setDimensionUnit(e.target.value as DimensionUnit)}
-              className="ml-2 text-xs bg-surface-elevated border border-border-subtle rounded-lg px-2 py-1 text-text-secondary"
-            >
-              <option value="mm">mm</option>
-              <option value="cm">cm</option>
-              <option value="m">m</option>
-            </select>
+            <>
+              <select
+                value={dimensionUnit}
+                onChange={(e) => setDimensionUnit(e.target.value as DimensionUnit)}
+                className="ml-2 text-xs bg-surface-elevated border border-border-subtle rounded-lg px-2 py-1 text-text-secondary"
+              >
+                <option value="mm">mm</option>
+                <option value="cm">cm</option>
+                <option value="m">m</option>
+              </select>
+              <button
+                onClick={() => {
+                  const svg = exportDimensionsSvg(polygon, dimensionUnit)
+                  downloadSvg(svg, `taras-wymiary-${new Date().toISOString().slice(0, 10)}.svg`)
+                }}
+                className="ml-1 px-2.5 py-1 rounded-md text-xs bg-accent/10 text-accent hover:bg-accent/20 transition-colors border border-accent/20"
+                title={t('canvas.export_dimensions')}
+              >
+                SVG
+              </button>
+            </>
           )}
         </div>
       )}
