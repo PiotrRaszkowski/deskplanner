@@ -175,12 +175,42 @@ function fillRow(
 
   if (mode === 'reuse-aggressive') {
     const sorted = [...boards].sort((a, b) => b.length - a.length)
+    const minLen = pool.getMinLength()
     let cursor = 0
+    let mergedShort = false
     while (cursor < segLen - 1) {
       const remaining = segLen - cursor
 
+      if (remaining < minLen && pieces.length > 0 && !mergedShort) {
+        mergedShort = true
+        const prev = pieces.pop()!
+        cursor -= prev.len + gap
+        const combined = segLen - cursor
+        if (prev.fromOffcut) {
+          pool.add(prev.board.id, prev.origLen)
+        } else if (prev.cut) {
+          const returnLen = prev.origLen - prev.len
+          if (returnLen >= pool.getMinLength()) pool.add(prev.board.id, returnLen)
+        }
+        const board = sorted[0]
+        const useLen = Math.min(board.length, combined)
+        if (useLen < board.length) pool.add(board.id, board.length - useLen)
+        pieces.push({ len: useLen, board, cut: useLen < board.length, fromOffcut: false, origLen: board.length })
+        cursor += useLen + gap
+        if (combined <= board.length) break
+        continue
+      }
+
+      if (remaining < minLen) {
+        const board = sorted[0]
+        const useLen = Math.min(board.length, remaining)
+        if (useLen < board.length) pool.add(board.id, board.length - useLen)
+        pieces.push({ len: useLen, board, cut: true, fromOffcut: false, origLen: board.length })
+        break
+      }
+
       const exactPool = pool.findBestFit(remaining)
-      if (exactPool) {
+      if (exactPool && Math.min(exactPool.length, remaining) >= minLen) {
         const board = byId.get(exactPool.id) || sorted[0]
         pool.take(exactPool.id, exactPool.length)
         const useLen = Math.min(exactPool.length, remaining)
@@ -191,7 +221,7 @@ function fillRow(
       }
 
       const largest = pool.findLargest()
-      if (largest && largest.length >= pool.getMinLength() && Math.min(largest.length, remaining) >= pool.getMinLength()) {
+      if (largest && largest.length >= minLen && Math.min(largest.length, remaining) >= minLen) {
         const board = byId.get(largest.id) || sorted[0]
         pool.take(largest.id, largest.length)
         const useLen = Math.min(largest.length, remaining)

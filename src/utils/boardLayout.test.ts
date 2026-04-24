@@ -310,6 +310,26 @@ describe('calculateLayout', () => {
       expect(checkMaxBoardLength(result.placedBoards, BOARDS)).toBe(0)
     })
 
+    it('reuse-aggressive should not use short offcuts when longer fresh board is available', () => {
+      const rect: Point[] = [
+        { x: 0, y: 0 },
+        { x: 6100, y: 0 },
+        { x: 6100, y: 3000 },
+        { x: 0, y: 3000 },
+      ]
+      const twoBoards: BoardSize[] = [
+        { id: '140x3000', width: 140, length: 3000, label: '140 × 3000 mm' },
+        { id: '140x4000', width: 140, length: 4000, label: '140 × 4000 mm' },
+      ]
+      const settings: OffcutSettings = { mode: 'reuse-aggressive', minLength: 500 }
+      const result = calculateLayout(rect, twoBoards, GAPS, 0, null, settings)
+
+      const shortOffcuts = result.placedBoards.filter(b =>
+        !b.ripCut && b.fromOffcut && b.actualLength < 500
+      )
+      expect(shortOffcuts.length, `Found ${shortOffcuts.length} short offcut pieces: ${shortOffcuts.map(b => Math.round(b.actualLength)).join(', ')}`).toBe(0)
+    })
+
     it('reuse-aggressive should not produce overlapping boards', () => {
       const wideRect: Point[] = [
         { x: 0, y: 0 },
